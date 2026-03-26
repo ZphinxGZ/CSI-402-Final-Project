@@ -1,14 +1,29 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using CSI_402_Final_Project.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CSI_402_Final_Project.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly Projectcsi402dbContext _db;
+
+    public HomeController(Projectcsi402dbContext db)
     {
-        return View();
+        _db = db;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var products = await _db.Products
+            .Include(p => p.Category)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(12)
+            .ToListAsync();
+
+        return View(products);
     }
 
     public IActionResult Privacy()
@@ -16,9 +31,9 @@ public class HomeController : Controller
         return View();
     }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    }
+    // [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    // public IActionResult Error()
+    // {
+    //     return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    // }
 }

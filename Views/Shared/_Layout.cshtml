@@ -6,38 +6,117 @@
     <title>@ViewData["Title"] - CSI_402_Final_Project</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CSI_402_Final_Project.styles.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">CSI_402_Final_Project</a>
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/img/logo-neon.svg" alt="Logo" width="28" height="28" />
+                    <span>Gaming Gear Store</span>
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                    <ul class="navbar-nav me-3">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house"></i>
+                                <span>Home</span>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Products" asp-action="Index">
+                                <i class="bi bi-grid"></i>
+                                <span>Products</span>
+                            </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Promotions" asp-action="Index">
+                                <i class="bi bi-lightning-charge"></i>
+                                <span>Promotions</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Cart" asp-action="Index">
+                                <i class="bi bi-cart"></i>
+                                <span>Cart</span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <form class="d-flex nav-search me-3" asp-controller="Products" asp-action="Index" method="get" role="search">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent text-light border-secondary-subtle">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input class="form-control" type="search" name="q" placeholder="Search products..." value="@Context.Request.Query["q"]" />
+                            <button class="btn btn-outline-light" type="submit">Search</button>
+                        </div>
+                    </form>
+
+                    <ul class="navbar-nav">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Users">
+                                        <i class="bi bi-people"></i>
+                                        <span>Users</span>
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Profile" asp-action="Index">
+                                    <i class="bi bi-person-circle"></i>
+                                    <span>@User.Identity?.Name</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-link nav-link d-flex align-items-center gap-2" style="display:inline;">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        <span>Logout</span>
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Account" asp-action="Login">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    <span>Login</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Account" asp-action="Register">
+                                    <i class="bi bi-person-plus"></i>
+                                    <span>Register</span>
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container flex-grow-1">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top footer text-muted mt-auto">
         <div class="container">
             &copy; 2026 - CSI_402_Final_Project - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
@@ -45,6 +124,21 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @if (TempData["SwalMessage"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: '@(TempData["SwalIcon"]?.ToString() ?? "success")',
+                title: '@(TempData["SwalTitle"]?.ToString() ?? "Success")',
+                text: '@TempData["SwalMessage"]',
+                confirmButtonColor: '#b100ff',
+                background: '#140c24',
+                color: '#e9e3ff'
+            });
+        </script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

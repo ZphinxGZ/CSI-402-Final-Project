@@ -1,0 +1,101 @@
+@model User
+@{
+    ViewData["Title"] = "My Account";
+}
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="neon-panel p-4">
+            <div class="text-center mb-4">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(177, 0, 255, 0.3), rgba(0, 240, 255, 0.2)); border: 2px solid rgba(177, 0, 255, 0.5);">
+                    <i class="bi bi-person" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="neon-glow mb-1">@Model.Name @Model.Lastname</h4>
+                <p class="text-muted mb-0">@Model.Email</p>
+                <span class="badge @(Model.Role == "Admin" ? "bg-success" : "bg-secondary")">@Model.Role</span>
+            </div>
+
+            <div class="list-group list-group-flush">
+                <a asp-action="Edit" class="list-group-item list-group-item-action bg-transparent text-light border-secondary">
+                    <i class="bi bi-pencil"></i> Edit Profile
+                </a>
+                <a asp-action="ChangePassword" class="list-group-item list-group-item-action bg-transparent text-light border-secondary">
+                    <i class="bi bi-key"></i> Change Password
+                </a>
+                <a asp-action="Addresses" class="list-group-item list-group-item-action bg-transparent text-light border-secondary">
+                    <i class="bi bi-geo-alt"></i> Manage Addresses
+                    <span class="badge bg-primary float-end">@Model.Shippingaddresses?.Count</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="neon-panel p-4 mb-4">
+            <h5 class="neon-glow mb-3">Account Information</h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">First Name</small>
+                    <p>@Model.Name</p>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Last Name</small>
+                    <p>@Model.Lastname</p>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Email</small>
+                    <p>@Model.Email</p>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Phone</small>
+                    <p>@(Model.PhoneNumber ?? "Not set")</p>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">Member Since</small>
+                    <p>@Model.CreatedAt?.ToString("yyyy-MM-dd")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="neon-panel p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="neon-glow mb-0">Shipping Addresses</h5>
+                <a asp-action="AddAddress" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus"></i> Add Address
+                </a>
+            </div>
+            
+            @if (Model.Shippingaddresses?.Any() != true)
+            {
+                <p class="text-muted">No shipping addresses added yet.</p>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var addr in Model.Shippingaddresses.Take(3))
+                    {
+                        <div class="list-group-item bg-transparent text-light border-secondary">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <p class="mb-1">@addr.Address</p>
+                                    <small class="text-muted">@addr.City, @addr.PostalCode</small>
+                                </div>
+                                <div>
+                                    <a asp-action="EditAddress" asp-route-id="@addr.Id" class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (Model.Shippingaddresses.Count > 3)
+                {
+                    <div class="text-center mt-3">
+                        <a asp-action="Addresses" class="btn btn-outline-light btn-sm">View All Addresses</a>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

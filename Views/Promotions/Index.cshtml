@@ -1,0 +1,41 @@
+@model List<Promotion>
+@{
+    ViewData["Title"] = "Promotions";
+}
+
+<h2 class="mb-3">Promotions</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No promotions yet.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var promo in Model)
+        {
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <h5 class="mb-1">@promo.Name</h5>
+                    @if (promo.IsActive == true)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </div>
+
+                <div class="text-muted">
+                    @promo.StartDate?.ToString("yyyy-MM-dd") - @promo.EndDate?.ToString("yyyy-MM-dd")
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(promo.Description))
+                {
+                    <p class="mb-0 mt-2">@promo.Description</p>
+                }
+            </div>
+        }
+    </div>
+}
