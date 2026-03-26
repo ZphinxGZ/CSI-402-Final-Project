@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "CSI-402-Final-Project/1.0.0": {
+        "runtime": {
+          "CSI-402-Final-Project.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "CSI-402-Final-Project/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
