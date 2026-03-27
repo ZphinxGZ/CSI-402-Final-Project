@@ -69,6 +69,9 @@ public class ProfileController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ProfileEditViewModel vm)
     {
+        // Remove Email from validation since it's disabled in the form
+        ModelState.Remove(nameof(vm.Email));
+        
         if (!ModelState.IsValid)
             return View(vm);
 
@@ -83,6 +86,7 @@ public class ProfileController : Controller
         user.Name = vm.Name;
         user.Lastname = vm.Lastname;
         user.PhoneNumber = vm.PhoneNumber;
+        // Email is not updated since it's disabled in the form
 
         await _db.SaveChangesAsync();
 
