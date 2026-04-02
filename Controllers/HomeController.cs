@@ -15,13 +15,13 @@ public class HomeController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var products = await _db.Products
+        var products = _db.Products
             .Include(p => p.Category)
             .OrderByDescending(p => p.CreatedAt)
             .Take(12)
-            .ToListAsync();
+            .ToList();
 
         return View(products);
     }

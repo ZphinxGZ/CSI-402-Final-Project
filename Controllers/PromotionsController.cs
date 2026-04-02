@@ -14,12 +14,12 @@ public class PromotionsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var promotions = await _db.Promotions
+        var promotions = _db.Promotions
             .OrderByDescending(p => p.IsActive)
             .ThenBy(p => p.EndDate)
-            .ToListAsync();
+            .ToList();
 
         return View(promotions);
     }

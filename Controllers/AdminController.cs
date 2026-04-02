@@ -23,18 +23,18 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Users()
+    public IActionResult Users()
     {
-        var users = await _db.Users
+        var users = _db.Users
             .OrderByDescending(u => u.CreatedAt)
-            .ToListAsync();
+            .ToList();
         return View(users);
     }
 
     [HttpGet]
-    public async Task<IActionResult> EditUser(int id)
+    public IActionResult EditUser(int id)
     {
-        var user = await _db.Users.FindAsync(id);
+        var user = _db.Users.Find(id);
         if (user == null)
         {
             return NotFound();
@@ -55,7 +55,7 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditUser(int id, AdminUserEditViewModel vm)
+    public IActionResult EditUser(int id, AdminUserEditViewModel vm)
     {
         if (id != vm.Id)
         {
@@ -67,7 +67,7 @@ public class AdminController : Controller
             return View(vm);
         }
 
-        var user = await _db.Users.FindAsync(id);
+        var user = _db.Users.Find(id);
         if (user == null)
         {
             return NotFound();
@@ -78,7 +78,7 @@ public class AdminController : Controller
         user.PhoneNumber = vm.PhoneNumber;
         user.Role = vm.Role;
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Updated";

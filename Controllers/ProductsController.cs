@@ -14,7 +14,7 @@ public class ProductsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? q = null)
+    public IActionResult Index(string? q = null)
     {
         var query = _db.Products
             .Include(p => p.Category)
@@ -26,19 +26,19 @@ public class ProductsController : Controller
             query = query.Where(p => (p.Name ?? "").Contains(q) || (p.Category != null && (p.Category.Name ?? "").Contains(q)));
         }
 
-        var products = await query
+        var products = query
             .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
+            .ToList();
 
         return View(products);
     }
 
     [HttpGet]
-    public async Task<IActionResult> Details(int id)
+    public IActionResult Details(int id)
     {
-        var product = await _db.Products
+        var product = _db.Products
             .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefault(p => p.Id == id);
 
         if (product == null)
         {

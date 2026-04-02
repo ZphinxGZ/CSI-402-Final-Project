@@ -27,15 +27,15 @@ public class ProfileController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized();
 
-        var user = await _db.Users
+        var user = _db.Users
             .Include(u => u.Shippingaddresses)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+            .FirstOrDefault(u => u.Id == userId);
 
         if (user == null)
             return NotFound();
@@ -44,13 +44,13 @@ public class ProfileController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Edit()
+    public IActionResult Edit()
     {
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized();
 
-        var user = await _db.Users.FindAsync(userId);
+        var user = _db.Users.Find(userId);
         if (user == null)
             return NotFound();
 
@@ -67,11 +67,8 @@ public class ProfileController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(ProfileEditViewModel vm)
+    public IActionResult Edit(ProfileEditViewModel vm)
     {
-        // Remove Email from validation since it's disabled in the form
-        ModelState.Remove(nameof(vm.Email));
-        
         if (!ModelState.IsValid)
             return View(vm);
 
@@ -79,16 +76,15 @@ public class ProfileController : Controller
         if (userId == null)
             return Unauthorized();
 
-        var user = await _db.Users.FindAsync(userId);
+        var user = _db.Users.Find(userId);
         if (user == null)
             return NotFound();
 
         user.Name = vm.Name;
         user.Lastname = vm.Lastname;
         user.PhoneNumber = vm.PhoneNumber;
-        // Email is not updated since it's disabled in the form
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Profile Updated";
@@ -105,7 +101,7 @@ public class ProfileController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel vm)
+    public IActionResult ChangePassword(ChangePasswordViewModel vm)
     {
         if (!ModelState.IsValid)
             return View(vm);
@@ -114,7 +110,7 @@ public class ProfileController : Controller
         if (userId == null)
             return Unauthorized();
 
-        var user = await _db.Users.FindAsync(userId);
+        var user = _db.Users.Find(userId);
         if (user == null)
             return NotFound();
 
@@ -125,7 +121,7 @@ public class ProfileController : Controller
         }
 
         user.Password = PasswordHasher.Hash(vm.NewPassword);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Password Changed";
@@ -135,15 +131,15 @@ public class ProfileController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Addresses()
+    public IActionResult Addresses()
     {
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized();
 
-        var addresses = await _db.Shippingaddresses
+        var addresses = _db.Shippingaddresses
             .Where(a => a.UserId == userId)
-            .ToListAsync();
+            .ToList();
 
         return View(addresses);
     }
@@ -156,7 +152,7 @@ public class ProfileController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddAddress(ShippingAddressEditViewModel vm)
+    public IActionResult AddAddress(ShippingAddressEditViewModel vm)
     {
         if (!ModelState.IsValid)
             return View(vm);
@@ -174,7 +170,7 @@ public class ProfileController : Controller
         };
 
         _db.Shippingaddresses.Add(address);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Address Added";
@@ -184,14 +180,14 @@ public class ProfileController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> EditAddress(int id)
+    public IActionResult EditAddress(int id)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized();
 
-        var address = await _db.Shippingaddresses
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+        var address = _db.Shippingaddresses
+            .FirstOrDefault(a => a.Id == id && a.UserId == userId);
 
         if (address == null)
             return NotFound();
@@ -209,7 +205,7 @@ public class ProfileController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditAddress(int id, ShippingAddressEditViewModel vm)
+    public IActionResult EditAddress(int id, ShippingAddressEditViewModel vm)
     {
         if (id != vm.Id)
             return BadRequest();
@@ -221,8 +217,8 @@ public class ProfileController : Controller
         if (userId == null)
             return Unauthorized();
 
-        var address = await _db.Shippingaddresses
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+        var address = _db.Shippingaddresses
+            .FirstOrDefault(a => a.Id == id && a.UserId == userId);
 
         if (address == null)
             return NotFound();
@@ -231,7 +227,7 @@ public class ProfileController : Controller
         address.City = vm.City;
         address.PostalCode = vm.PostalCode;
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Address Updated";
@@ -242,20 +238,20 @@ public class ProfileController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteAddress(int id)
+    public IActionResult DeleteAddress(int id)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
             return Unauthorized();
 
-        var address = await _db.Shippingaddresses
-            .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
+        var address = _db.Shippingaddresses
+            .FirstOrDefault(a => a.Id == id && a.UserId == userId);
 
         if (address == null)
             return NotFound();
 
         _db.Shippingaddresses.Remove(address);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Address Deleted";
