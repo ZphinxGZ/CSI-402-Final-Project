@@ -1,0 +1,104 @@
+@model ProductCreateViewModel
+@{
+    ViewData["Title"] = "Create Product";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Create New Product</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Price" class="form-label"></label>
+                            <input asp-for="Price" class="form-control" type="number" step="0.01" />
+                            <span asp-validation-for="Price" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Stock" class="form-label"></label>
+                            <input asp-for="Stock" class="form-control" type="number" />
+                            <span asp-validation-for="Stock" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label"></label>
+                        <select asp-for="CategoryId" class="form-control">
+                            <option value="">Select Category</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in ViewBag.Categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            }
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ImageUrl" class="form-label"></label>
+                        <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                        <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                        <div class="form-text">Enter image URL or leave blank to use placeholder</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Create Product
+                        </button>
+                        <a asp-action="Products" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Products
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Image Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="imagePreview" class="text-center">
+                    <div class="d-flex align-items-center justify-content-center" style="height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;">
+                        <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('ImageUrl').addEventListener('input', function() {
+            const url = this.value.trim();
+            const preview = document.getElementById('imagePreview');
+            
+            if (url) {
+                preview.innerHTML = `<img src="${url}" style="max-width: 100%; height: 200px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'d-flex align-items-center justify-content-center\\' style=\\'height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;\\'><i class=\\'bi bi-image\\' style=\\'font-size: 3rem; color: var(--muted);\\'></i></div>';">`;
+            } else {
+                preview.innerHTML = `<div class="d-flex align-items-center justify-content-center" style="height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;">
+                    <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
+                </div>`;
+            }
+        });
+    </script>
+}

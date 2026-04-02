@@ -19855,6 +19855,11 @@
       "FileKind": "mvc"
     },
     {
+      "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Admin\\CreateProduct.cshtml",
+      "TargetPath": "Views\\Admin\\CreateProduct.cshtml",
+      "FileKind": "mvc"
+    },
+    {
       "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Profile\\Addresses.cshtml",
       "TargetPath": "Views\\Profile\\Addresses.cshtml",
       "FileKind": "mvc"
@@ -19892,6 +19897,11 @@
     {
       "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Shared\\_Layout.cshtml",
       "TargetPath": "Views\\Shared\\_Layout.cshtml",
+      "FileKind": "mvc"
+    },
+    {
+      "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Admin\\Products.cshtml",
+      "TargetPath": "Views\\Admin\\Products.cshtml",
       "FileKind": "mvc"
     },
     {
@@ -19952,6 +19962,11 @@
     {
       "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Account\\Register.cshtml",
       "TargetPath": "Views\\Account\\Register.cshtml",
+      "FileKind": "mvc"
+    },
+    {
+      "FilePath": "c:\\Users\\ZphinxGz\\Desktop\\Au\\GH\\CSI-402-Final-Project\\Views\\Admin\\EditProduct.cshtml",
+      "TargetPath": "Views\\Admin\\EditProduct.cshtml",
       "FileKind": "mvc"
     },
     {

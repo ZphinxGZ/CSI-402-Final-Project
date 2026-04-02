@@ -21,12 +21,12 @@ else
                 <div class="card h-100 product-card">
                     @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
                     {
-                        <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 200px;" alt="@p.Name" />
+                        <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 220px;" alt="@p.Name" />
                     }
                     else
                     {
-                        <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: rgba(177, 0, 255, 0.1);">
-                            <i class="bi bi-image" style="font-size: 3rem; opacity: 0.5;"></i>
+                        <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: rgba(124, 58, 237, 0.1);">
+                            <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
                         </div>
                     }
                     <div class="card-body d-flex flex-column">

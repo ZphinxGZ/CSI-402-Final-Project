@@ -28,12 +28,33 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-3">
-                        <li class="nav-item">
+                        @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Index">
+                                    <i class="bi bi-gear"></i>
+                                    <span>Admin</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Products">
+                                    <i class="bi bi-box"></i>
+                                    <span>Products</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="CreateProduct">
+                                    <i class="bi bi-plus-circle"></i>
+                                    <span>Add Product</span>
+                                </a>
+                            </li>
+                        }
+                        @* <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
                                 <i class="bi bi-house"></i>
                                 <span>Home</span>
                             </a>
-                        </li>
+                        </li> *@
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Products" asp-action="Index">
                                 <i class="bi bi-grid"></i>
@@ -54,16 +75,7 @@
                         </li>
                     </ul>
 
-                    <form class="d-flex nav-search me-3" asp-controller="Products" asp-action="Index" method="get" role="search">
-                        <div class="input-group">
-                            <span class="input-group-text bg-transparent text-light border-secondary-subtle">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input class="form-control" type="search" name="q" placeholder="Search products..." value="@Context.Request.Query["q"]" />
-                            <button class="btn btn-outline-light" type="submit">Search</button>
-                        </div>
-                    </form>
-
+                    
                     <ul class="navbar-nav">
                         @if (User?.Identity?.IsAuthenticated == true)
                         {

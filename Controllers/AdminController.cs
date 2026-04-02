@@ -86,4 +86,147 @@ public class AdminController : Controller
 
         return RedirectToAction(nameof(Users));
     }
+
+    [HttpGet]
+    public IActionResult Products()
+    {
+        var products = _db.Products
+            .Include(p => p.Category)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToList();
+        return View(products);
+    }
+
+    [HttpGet]
+    public IActionResult CreateProduct()
+    {
+        var categories = _db.Categories
+            .OrderBy(c => c.Name)
+            .ToList();
+        
+        ViewBag.Categories = categories;
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult CreateProduct(ProductCreateViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            var categories = _db.Categories
+                .OrderBy(c => c.Name)
+                .ToList();
+            ViewBag.Categories = categories;
+            return View(vm);
+        }
+
+        var product = new Product
+        {
+            Name = vm.Name,
+            Description = vm.Description,
+            Price = vm.Price,
+            CategoryId = vm.CategoryId,
+            ImageUrl = vm.ImageUrl,
+            Stock = vm.Stock,
+            CreatedAt = DateTime.Now
+        };
+
+        _db.Products.Add(product);
+        _db.SaveChanges();
+
+        TempData["SwalIcon"] = "success";
+        TempData["SwalTitle"] = "Product Created";
+        TempData["SwalMessage"] = "Product has been created successfully.";
+
+        return RedirectToAction(nameof(Products));
+    }
+
+    [HttpGet]
+    public IActionResult EditProduct(int id)
+    {
+        var product = _db.Products.Find(id);
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        var vm = new ProductCreateViewModel
+        {
+            Id = product.Id,
+            Name = product.Name ?? "",
+            Description = product.Description,
+            Price = product.Price ?? 0,
+            CategoryId = product.CategoryId ?? 0,
+            ImageUrl = product.ImageUrl,
+            Stock = product.Stock
+        };
+
+        var categories = _db.Categories
+            .OrderBy(c => c.Name)
+            .ToList();
+        ViewBag.Categories = categories;
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult EditProduct(int id, ProductCreateViewModel vm)
+    {
+        if (id != vm.Id)
+        {
+            return BadRequest();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var categories = _db.Categories
+                .OrderBy(c => c.Name)
+                .ToList();
+            ViewBag.Categories = categories;
+            return View(vm);
+        }
+
+        var product = _db.Products.Find(id);
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        product.Name = vm.Name;
+        product.Description = vm.Description;
+        product.Price = vm.Price;
+        product.CategoryId = vm.CategoryId;
+        product.ImageUrl = vm.ImageUrl;
+        product.Stock = vm.Stock;
+
+        _db.SaveChanges();
+
+        TempData["SwalIcon"] = "success";
+        TempData["SwalTitle"] = "Product Updated";
+        TempData["SwalMessage"] = "Product has been updated successfully.";
+
+        return RedirectToAction(nameof(Products));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult DeleteProduct(int id)
+    {
+        var product = _db.Products.Find(id);
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        _db.Products.Remove(product);
+        _db.SaveChanges();
+
+        TempData["SwalIcon"] = "success";
+        TempData["SwalTitle"] = "Product Deleted";
+        TempData["SwalMessage"] = "Product has been deleted successfully.";
+
+        return RedirectToAction(nameof(Products));
+    }
 }

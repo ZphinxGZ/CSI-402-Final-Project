@@ -3,37 +3,95 @@
     ViewData["Title"] = "Products";
 }
 
-<h2 class="mb-3">Products</h2>
-
-@if (ViewData["q"] != null)
-{
-    <div class="text-muted mb-3">Showing results for: <span class="neon-glow">@ViewData["q"]</span></div>
-}
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info">No products yet.</div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-3 g-3">
-        @foreach (var p in Model)
-        {
-            <div class="col">
-                <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none" style="color: inherit;">
-                    <div class="card h-100" style="cursor: pointer;">
-                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Categories</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="@Url.Action("Index", "Products")" class="list-group-item list-group-item-action @(ViewData["categoryId"] == null ? "active" : "")">
+                        <i class="bi bi-grid-3x3-gap me-2"></i>All Products
+                    </a>
+                    @if (ViewBag.Categories != null)
+                    {
+                        @foreach (var category in ViewBag.Categories)
                         {
-                            <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 180px;" />
+                            <a href="@Url.Action("Index", "Products", new { categoryId = category.Id })" 
+                               class="list-group-item list-group-item-action @(ViewData["categoryId"]?.ToString() == category.Id.ToString() ? "active" : "")">
+                                <i class="bi bi-folder me-2"></i>@category.Name
+                            </a>
                         }
-                        <div class="card-body">
-                            <h5 class="card-title">@p.Name</h5>
-                            <div class="text-muted">@p.Category?.Name</div>
-                            <div class="mt-2 fw-bold">@p.Price?.ToString("N2") ฿</div>
-                        </div>
+                    }
+                </div>
+                
+                <hr class="my-3">
+                
+                <h6 class="mb-3">Sort by Price</h6>
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("Index", "Products", new { categoryId = ViewData["categoryId"], sortOrder = "price_asc" })" 
+                       class="btn btn-outline-sm @(ViewData["sortOrder"]?.ToString() == "price_asc" ? "btn-primary" : "btn-outline-secondary")">
+                        <i class="bi bi-sort-numeric-up me-1"></i>Price: Low to High
+                    </a>
+                    <a href="@Url.Action("Index", "Products", new { categoryId = ViewData["categoryId"], sortOrder = "price_desc" })" 
+                       class="btn btn-outline-sm @(ViewData["sortOrder"]?.ToString() == "price_desc" ? "btn-primary" : "btn-outline-secondary")">
+                        <i class="bi bi-sort-numeric-down me-1"></i>Price: High to Low
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Products</h2>
+            <form method="get" class="d-flex">
+                <input type="hidden" name="categoryId" value="@ViewData["categoryId"]" />
+                <input type="text" name="q" class="form-control me-2" placeholder="Search products..." value="@ViewData["q"]" style="width: 200px;" />
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        @if (ViewData["q"] != null)
+        {
+            <div class="text-muted mb-3">Showing results for: <span class="neon-glow">@ViewData["q"]</span></div>
+        }
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">No products found.</div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach (var p in Model)
+                {
+                    <div class="col">
+                        <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none" style="color: inherit;">
+                            <div class="card h-100" style="cursor: pointer;">
+                                @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                                {
+                                    <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 220px;" alt="@p.Name" />
+                                }
+                                else
+                                {
+                                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: rgba(124, 58, 237, 0.1);">
+                                        <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
+                                    </div>
+                                }
+                                <div class="card-body">
+                                    <h5 class="card-title">@p.Name</h5>
+                                    <div class="text-muted mb-2">@p.Category?.Name</div>
+                                    <div class="mt-2 fw-bold fs-5">@p.Price?.ToString("N2") ฿</div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
-                </a>
+                }
             </div>
         }
     </div>
-}
+</div>

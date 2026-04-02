@@ -14,7 +14,7 @@ public class ProductsController : Controller
     }
 
     [HttpGet]
-    public IActionResult Index(string? q = null)
+    public IActionResult Index(string? q = null, int? categoryId = null, string? sortOrder = null)
     {
         var query = _db.Products
             .Include(p => p.Category)
@@ -26,9 +26,35 @@ public class ProductsController : Controller
             query = query.Where(p => (p.Name ?? "").Contains(q) || (p.Category != null && (p.Category.Name ?? "").Contains(q)));
         }
 
-        var products = query
-            .OrderByDescending(p => p.CreatedAt)
+        if (categoryId.HasValue)
+        {
+            ViewData["categoryId"] = categoryId;
+            query = query.Where(p => p.CategoryId == categoryId);
+        }
+
+        // Sort by price
+        switch (sortOrder)
+        {
+            case "price_asc":
+                query = query.OrderBy(p => p.Price);
+                ViewData["sortOrder"] = "price_asc";
+                break;
+            case "price_desc":
+                query = query.OrderByDescending(p => p.Price);
+                ViewData["sortOrder"] = "price_desc";
+                break;
+            default:
+                query = query.OrderByDescending(p => p.CreatedAt);
+                break;
+        }
+
+        var products = query.ToList();
+
+        var categories = _db.Categories
+            .OrderBy(c => c.Name)
             .ToList();
+
+        ViewBag.Categories = categories;
 
         return View(products);
     }
