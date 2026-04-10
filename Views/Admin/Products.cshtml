@@ -4,11 +4,20 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Manage Products</h2>
-    <a asp-action="CreateProduct" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> Add New Product
-    </a>
+    <h2 class="neon-glow mb-0"><i class="bi bi-box me-2"></i>Manage Products</h2>
+    <div>
+        <a asp-action="CreateProduct" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Add New Product
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-2">
+            <i class="bi bi-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
 </div>
+
+<form id="deleteForm" method="post" asp-action="DeleteProduct" asp-antiforgery="true" style="display:none;">
+    <input type="hidden" name="id" id="deleteProductId" />
+</form>
 
 @if (!Model.Any())
 {
@@ -56,7 +65,7 @@ else
                             }
                             else
                             {
-                                <div style="width: 50px; height: 50px; background: rgba(124, 58, 237, 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                <div style="width: 50px; height: 50px; background: var(--accent-lighter); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                                     <i class="bi bi-image" style="color: var(--muted);"></i>
                                 </div>
                             }
@@ -81,38 +90,26 @@ else
     </div>
 }
 
+@section Scripts {
 <script>
 function confirmDelete(productId) {
     Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
+        title: 'Delete Product?',
+        text: "This action cannot be undone!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#9794a8',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        background: '#ffffff',
+        color: '#2d2a3e'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Create form and submit
-            const form = document.createElement('form');
-            form.method = 'post';
-            form.action = '@Url.Action("DeleteProduct", "Admin")';
-            
-            const productIdInput = document.createElement('input');
-            productIdInput.type = 'hidden';
-            productIdInput.name = 'id';
-            productIdInput.value = productId;
-            
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '__RequestVerificationToken';
-            tokenInput.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            
-            form.appendChild(productIdInput);
-            form.appendChild(tokenInput);
-            document.body.appendChild(form);
-            form.submit();
+            document.getElementById('deleteProductId').value = productId;
+            document.getElementById('deleteForm').submit();
         }
     });
 }
 </script>
+}

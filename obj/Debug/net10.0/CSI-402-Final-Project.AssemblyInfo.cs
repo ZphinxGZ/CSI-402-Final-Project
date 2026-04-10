@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CSI-402-Final-Project")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c4c2777abf9000b4f5dc2144e4e1477dd8e3510e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7bd8702b7e5b4b43dc9814693bedd272d8167d11")]
 [assembly: System.Reflection.AssemblyProductAttribute("CSI-402-Final-Project")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CSI-402-Final-Project")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

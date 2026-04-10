@@ -18,6 +18,8 @@ public class ProductsController : Controller
     {
         var query = _db.Products
             .Include(p => p.Category)
+            .Include(p => p.Promotionproducts)
+            .ThenInclude(pp => pp.Promotion)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(q))
@@ -32,7 +34,6 @@ public class ProductsController : Controller
             query = query.Where(p => p.CategoryId == categoryId);
         }
 
-        // Sort by price
         switch (sortOrder)
         {
             case "price_asc":
@@ -50,6 +51,14 @@ public class ProductsController : Controller
 
         var products = query.ToList();
 
+        // Build discount lookup
+        var discountMap = new Dictionary<int, decimal>();
+        foreach (var p in products)
+        {
+            discountMap[p.Id] = GetDiscountedPrice(p);
+        }
+        ViewBag.DiscountMap = discountMap;
+
         var categories = _db.Categories
             .OrderBy(c => c.Name)
             .ToList();
@@ -64,6 +73,8 @@ public class ProductsController : Controller
     {
         var product = _db.Products
             .Include(p => p.Category)
+            .Include(p => p.Promotionproducts)
+            .ThenInclude(pp => pp.Promotion)
             .FirstOrDefault(p => p.Id == id);
 
         if (product == null)
@@ -71,6 +82,36 @@ public class ProductsController : Controller
             return NotFound();
         }
 
+        ViewBag.DiscountedPrice = GetDiscountedPrice(product);
+
         return View(product);
+    }
+
+    private decimal GetDiscountedPrice(Product product)
+    {
+        var originalPrice = product.Price ?? 0;
+        var now = DateTime.Now;
+
+        var activePromo = product.Promotionproducts?
+            .Select(pp => pp.Promotion)
+            .FirstOrDefault(promo =>
+                promo != null &&
+                promo.IsActive == true &&
+                promo.StartDate <= now &&
+                promo.EndDate >= now);
+
+        if (activePromo == null) return originalPrice;
+
+        if (activePromo.DiscountType == "percentage" && activePromo.DiscountValue.HasValue)
+        {
+            return Math.Round(originalPrice * (1 - activePromo.DiscountValue.Value / 100), 2);
+        }
+        else if (activePromo.DiscountType == "fixed" && activePromo.DiscountValue.HasValue)
+        {
+            var result = originalPrice - activePromo.DiscountValue.Value;
+            return result > 0 ? Math.Round(result, 2) : 0;
+        }
+
+        return originalPrice;
     }
 }

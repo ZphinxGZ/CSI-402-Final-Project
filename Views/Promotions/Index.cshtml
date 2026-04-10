@@ -3,39 +3,90 @@
     ViewData["Title"] = "Promotions";
 }
 
-<h2 class="mb-3">Promotions</h2>
+<h2 class="neon-glow mb-4"><i class="bi bi-lightning-charge me-2"></i>Promotions</h2>
 
 @if (!Model.Any())
 {
-    <div class="alert alert-info">No promotions yet.</div>
+    <div class="text-center py-5">
+        <i class="bi bi-tag" style="font-size: 4rem; color: var(--muted);"></i>
+        <h4 class="mt-3">No promotions yet</h4>
+        <p class="text-muted">Check back later for exciting deals!</p>
+    </div>
 }
 else
 {
-    <div class="list-group">
-        @foreach (var promo in Model)
-        {
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between">
-                    <h5 class="mb-1">@promo.Name</h5>
-                    @if (promo.IsActive == true)
-                    {
-                        <span class="badge bg-success">Active</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Inactive</span>
-                    }
+    @foreach (var promo in Model)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h4 class="fw-bold mb-1">@promo.Name</h4>
+                        @if (!string.IsNullOrWhiteSpace(promo.Description))
+                        {
+                            <p class="text-muted mb-1">@promo.Description</p>
+                        }
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            @promo.StartDate?.ToString("dd MMM yyyy") - @promo.EndDate?.ToString("dd MMM yyyy")
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        @if (promo.DiscountType == "percentage")
+                        {
+                            <span class="badge bg-danger fs-6">@promo.DiscountValue% OFF</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger fs-6">@promo.DiscountValue?.ToString("N0") ฿ OFF</span>
+                        }
+                        <div class="mt-1">
+                            @if (promo.IsActive == true)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </div>
+                    </div>
                 </div>
 
-                <div class="text-muted">
-                    @promo.StartDate?.ToString("yyyy-MM-dd") - @promo.EndDate?.ToString("yyyy-MM-dd")
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(promo.Description))
+                @if (promo.Promotionproducts?.Any() == true)
                 {
-                    <p class="mb-0 mt-2">@promo.Description</p>
+                    <hr />
+                    <div class="d-flex gap-3 flex-wrap">
+                        @foreach (var pp in promo.Promotionproducts.Take(6))
+                        {
+                            @if (pp.Product != null)
+                            {
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@pp.Product.Id" class="text-decoration-none">
+                                    <div class="text-center" style="width: 100px;">
+                                        @if (!string.IsNullOrWhiteSpace(pp.Product.ImageUrl))
+                                        {
+                                            <img src="@pp.Product.ImageUrl" alt="@pp.Product.Name" style="width: 80px; height: 80px; object-fit: cover;" class="rounded mb-1" />
+                                        }
+                                        else
+                                        {
+                                            <div style="width: 80px; height: 80px; background: var(--accent-lighter);" class="rounded mb-1 d-flex align-items-center justify-content-center mx-auto">
+                                                <i class="bi bi-image" style="color: var(--muted);"></i>
+                                            </div>
+                                        }
+                                        <small class="d-block text-truncate" style="color: var(--text);">@pp.Product.Name</small>
+                                    </div>
+                                </a>
+                            }
+                        }
+                        @if (promo.Promotionproducts.Count > 6)
+                        {
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted">+@(promo.Promotionproducts.Count - 6) more</span>
+                            </div>
+                        }
+                    </div>
                 }
             </div>
-        }
-    </div>
+        </div>
+    }
 }

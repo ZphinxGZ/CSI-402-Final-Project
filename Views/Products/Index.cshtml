@@ -78,14 +78,30 @@
                                 }
                                 else
                                 {
-                                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: rgba(124, 58, 237, 0.1);">
+                                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: var(--accent-lighter);">
                                         <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
                                     </div>
                                 }
                                 <div class="card-body">
                                     <h5 class="card-title">@p.Name</h5>
                                     <div class="text-muted mb-2">@p.Category?.Name</div>
-                                    <div class="mt-2 fw-bold fs-5">@p.Price?.ToString("N2") ฿</div>
+                                    @{
+                                        var discountMap = ViewBag.DiscountMap as Dictionary<int, decimal>;
+                                        var discountedPrice = discountMap != null && discountMap.ContainsKey(p.Id) ? discountMap[p.Id] : (p.Price ?? 0);
+                                        var hasDiscount = discountedPrice < (p.Price ?? 0);
+                                    }
+                                    @if (hasDiscount)
+                                    {
+                                        <div class="mt-2">
+                                            <small class="text-muted text-decoration-line-through">@p.Price?.ToString("N2") ฿</small>
+                                            <span class="fw-bold fs-5 ms-1" style="color: var(--accent);">@discountedPrice.ToString("N2") ฿</span>
+                                            <span class="badge bg-danger ms-1">Sale</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-2 fw-bold fs-5" style="color: var(--accent);">@p.Price?.ToString("N2") ฿</div>
+                                    }
                                 </div>
                             </div>
                         </a>

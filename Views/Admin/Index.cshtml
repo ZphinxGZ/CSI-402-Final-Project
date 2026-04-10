@@ -2,20 +2,81 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h2 class="neon-glow mb-4">Admin Dashboard</h2>
+<h2 class="neon-glow mb-4"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h2>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3 mb-4">
     <div class="col">
-        <div class="neon-panel p-4 h-100">
-            <div class="d-flex align-items-center mb-3">
-                <i class="bi bi-people fs-1 me-3" style="color: #b100ff;"></i>
-                <div>
-                    <h5 class="mb-1">User Management</h5>
-                    <p class="text-muted mb-0">Manage users and roles</p>
-                </div>
+        <div class="card text-center p-3">
+            <div class="fs-1 fw-bold" style="color: var(--accent);">@ViewBag.TotalUsers</div>
+            <small class="text-muted">Total Users</small>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center p-3">
+            <div class="fs-1 fw-bold" style="color: var(--accent);">@ViewBag.TotalProducts</div>
+            <small class="text-muted">Total Products</small>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center p-3">
+            <div class="fs-1 fw-bold" style="color: var(--accent);">@ViewBag.TotalOrders</div>
+            <small class="text-muted">Total Orders</small>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center p-3">
+            <div class="fs-1 fw-bold text-warning">@ViewBag.PendingOrders</div>
+            <small class="text-muted">Pending Orders</small>
+        </div>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+    <div class="col">
+        <div class="card h-100 p-4">
+            <div class="text-center mb-3">
+                <i class="bi bi-receipt fs-1" style="color: var(--accent);"></i>
             </div>
-            <a asp-action="Users" class="btn btn-primary w-100">
-                <i class="bi bi-arrow-right"></i> Manage Users
+            <h5 class="text-center mb-1">Orders</h5>
+            <p class="text-muted text-center small mb-3">View and manage orders</p>
+            <a asp-action="Orders" class="btn btn-primary w-100 mt-auto">
+                <i class="bi bi-arrow-right me-1"></i>Manage
+            </a>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 p-4">
+            <div class="text-center mb-3">
+                <i class="bi bi-box fs-1" style="color: var(--accent);"></i>
+            </div>
+            <h5 class="text-center mb-1">Products</h5>
+            <p class="text-muted text-center small mb-3">Add and edit products</p>
+            <a asp-action="Products" class="btn btn-primary w-100 mt-auto">
+                <i class="bi bi-arrow-right me-1"></i>Manage
+            </a>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 p-4">
+            <div class="text-center mb-3">
+                <i class="bi bi-lightning-charge fs-1" style="color: var(--accent);"></i>
+            </div>
+            <h5 class="text-center mb-1">Promotions</h5>
+            <p class="text-muted text-center small mb-3">Manage discounts</p>
+            <a asp-action="Promotions" class="btn btn-primary w-100 mt-auto">
+                <i class="bi bi-arrow-right me-1"></i>Manage
+            </a>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 p-4">
+            <div class="text-center mb-3">
+                <i class="bi bi-people fs-1" style="color: var(--accent);"></i>
+            </div>
+            <h5 class="text-center mb-1">Users</h5>
+            <p class="text-muted text-center small mb-3">Manage users and roles</p>
+            <a asp-action="Users" class="btn btn-primary w-100 mt-auto">
+                <i class="bi bi-arrow-right me-1"></i>Manage
             </a>
         </div>
     </div>

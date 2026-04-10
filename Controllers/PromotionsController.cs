@@ -17,6 +17,8 @@ public class PromotionsController : Controller
     public IActionResult Index()
     {
         var promotions = _db.Promotions
+            .Include(p => p.Promotionproducts)
+            .ThenInclude(pp => pp.Product)
             .OrderByDescending(p => p.IsActive)
             .ThenBy(p => p.EndDate)
             .ToList();

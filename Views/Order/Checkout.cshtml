@@ -1,0 +1,147 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container mt-4">
+    <h2 class="neon-glow mb-4"><i class="bi bi-credit-card me-2"></i>Checkout</h2>
+
+    <form asp-action="PlaceOrder" method="post">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bag-check me-2"></i>Order Items</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @foreach (var item in Model.Items)
+                        {
+                            <div class="d-flex align-items-center p-3 border-bottom">
+                                <div class="me-3">
+                                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" alt="@item.ProductName" style="width: 60px; height: 60px; object-fit: cover;" class="rounded" />
+                                    }
+                                    else
+                                    {
+                                        <div style="width: 60px; height: 60px; background: var(--accent-lighter);" class="rounded d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-image" style="color: var(--muted);"></i>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">@item.ProductName</h6>
+                                    <small class="text-muted">x @item.Quantity</small>
+                                </div>
+                                <div class="text-end">
+                                    @if (item.HasDiscount)
+                                    {
+                                        <small class="text-muted text-decoration-line-through">@item.OriginalPrice.ToString("N2") ฿</small>
+                                        <div class="fw-bold" style="color: var(--accent);">@item.FinalPrice.ToString("N2") ฿</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="fw-bold">@item.FinalPrice.ToString("N2") ฿</div>
+                                    }
+                                    <small class="text-muted">Total: @item.TotalPrice.ToString("N2") ฿</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.Addresses.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Shipping Address</h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var addr in Model.Addresses)
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="selectedAddressId" value="@addr.Id"
+                                           id="addr_@addr.Id" @(addr.Id == Model.Addresses.First().Id ? "checked" : "")>
+                                    <label class="form-check-label" for="addr_@addr.Id">
+                                        @addr.Address, @addr.City @addr.PostalCode
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No shipping address found. <a asp-controller="Profile" asp-action="AddAddress">Add one here</a>.
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span>@Model.SubTotal.ToString("N2") ฿</span>
+                        </div>
+                        @if (Model.Discount > 0)
+                        {
+                            <div class="d-flex justify-content-between mb-2 text-success">
+                                <span><i class="bi bi-tag me-1"></i>Discount:</span>
+                                <span>-@Model.Discount.ToString("N2") ฿</span>
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping:</span>
+                            <span>Free</span>
+                        </div>
+                        <hr />
+                        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                            <span>Total:</span>
+                            <span style="color: var(--accent);">@Model.Total.ToString("N2") ฿</span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="placeOrderBtn">
+                                <i class="bi bi-check-circle me-2"></i>Place Order
+                            </button>
+                            <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('placeOrderBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            var form = this.closest('form');
+            Swal.fire({
+                title: 'Confirm Order?',
+                text: 'Are you sure you want to place this order?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#7c3aed',
+                cancelButtonColor: '#9794a8',
+                confirmButtonText: 'Yes, Place Order!',
+                cancelButtonText: 'Cancel',
+                background: '#ffffff',
+                color: '#2d2a3e'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+}

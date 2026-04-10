@@ -8,10 +8,6 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.15rem rgba(124, 58, 237, 0.25);
-}
-
 html {
   position: relative;
   min-height: 100%;
@@ -21,138 +17,205 @@ body {
   margin-bottom: 60px;
 }
 
+/* ===== White & Purple Modern Theme ===== */
 :root {
-  --bg-0: #1f2937;
-  --bg-1: #111827;
-  --card: #374151;
-  --text: #f9fafb;
-  --muted: #d1d5db;
-  --border: #4b5563;
+  --bg-0: #ffffff;
+  --bg-1: #f8f7fc;
+  --bg-2: #f1eef9;
+  --card: #ffffff;
+  --text: #2d2a3e;
+  --text-secondary: #6b6880;
+  --muted: #9794a8;
+  --border: #e2dff0;
   --accent: #7c3aed;
-  --accent-2: #a78bfa;
-  --accent-light: #c4b5fd;
+  --accent-hover: #6d28d9;
+  --accent-light: #ede9fe;
+  --accent-lighter: #f5f3ff;
+  --shadow: rgba(124, 58, 237, 0.08);
+  --shadow-hover: rgba(124, 58, 237, 0.16);
 }
 
 body {
-  background: linear-gradient(180deg, var(--bg-0), var(--bg-1));
+  background-color: var(--bg-1);
   color: var(--text);
   font-family: 'Poppins', sans-serif;
 }
 
 a {
   color: var(--accent);
+  text-decoration: none;
 }
 
 a:hover {
-  color: var(--accent-2);
+  color: var(--accent-hover);
 }
 
+/* ===== Navbar ===== */
 .navbar {
-  border-bottom: 1px solid var(--border) !important;
   background: var(--bg-0) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 1px 8px var(--shadow);
   font-family: 'Poppins', sans-serif;
 }
 
 .navbar .navbar-brand {
   letter-spacing: 0.3px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--accent) !important;
-}
-
-.nav-search .input-group-text,
-.nav-search .form-control,
-.nav-search .btn {
-  background-color: var(--bg-1);
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.nav-search .form-control {
-  min-width: 220px;
-}
-
-.nav-search .btn-outline-light {
-  color: var(--text);
-  border-color: var(--border);
-  background-color: var(--bg-1);
-}
-
-.nav-search .btn-outline-light:hover {
-  background-color: var(--accent);
-  border-color: var(--accent);
-  color: white;
 }
 
 .nav-link {
   color: var(--text) !important;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
 }
 
 .nav-link:hover {
   color: var(--accent) !important;
+  background: var(--accent-light);
 }
 
+.navbar-toggler {
+  border-color: var(--border);
+}
+
+.navbar-toggler-icon {
+  filter: none;
+}
+
+/* ===== Container ===== */
 .container {
   max-width: 1100px;
 }
 
-.card,
-.list-group-item,
-.alert {
+/* ===== Cards ===== */
+.card {
   background-color: var(--card);
   color: var(--text);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  box-shadow: 0 2px 12px var(--shadow);
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px var(--shadow-hover);
+}
+
+.card-header {
+  background-color: var(--accent-lighter);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.card-title {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ===== List Groups ===== */
+.list-group-item {
+  background-color: var(--bg-0);
+  color: var(--text);
+  border-color: var(--border);
   font-family: 'Poppins', sans-serif;
 }
 
-.list-group-item {
-  background-color: var(--bg-1);
+.list-group-item.active {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
 }
 
+.list-group-item-action:hover {
+  background-color: var(--accent-light);
+  color: var(--accent);
+}
+
+/* ===== Alerts ===== */
+.alert {
+  border-radius: 10px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.alert-info {
+  background-color: var(--accent-lighter);
+  color: var(--accent);
+  border: 1px solid var(--accent-light);
+}
+
+/* ===== Text ===== */
 .text-muted {
   color: var(--muted) !important;
 }
 
-.form-control {
-  background-color: var(--bg-1);
+/* ===== Forms ===== */
+.form-control,
+.form-select {
+  background-color: var(--bg-0);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   font-family: 'Poppins', sans-serif;
+  padding: 10px 14px;
 }
 
 .form-control::placeholder {
   color: var(--muted);
 }
 
-.form-control:focus {
-  background-color: var(--bg-1);
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--bg-0);
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: 0 0 0 0.15rem rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.15);
+}
+
+.form-label {
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.form-text {
+  color: var(--muted);
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.15);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s ease;
 }
 
 .btn-primary {
   background-color: var(--accent);
   border-color: var(--accent);
-  font-weight: 500;
-  border-radius: 6px;
-  padding: 8px 16px;
+  color: #fff;
+  padding: 8px 20px;
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-2);
-  border-color: var(--accent-2);
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 .btn-success {
   background-color: #10b981;
   border-color: #10b981;
-  font-weight: 500;
-  border-radius: 6px;
-  padding: 8px 16px;
+  color: #fff;
+  padding: 8px 20px;
 }
 
 .btn-success:hover {
@@ -160,52 +223,242 @@ a:hover {
   border-color: #059669;
 }
 
+.btn-outline-primary {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-outline-danger {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.btn-outline-danger:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.btn-secondary {
+  background-color: var(--bg-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 .btn-link {
   color: var(--accent);
 }
 
 .btn-link:hover {
-  color: var(--accent-2);
+  color: var(--accent-hover);
 }
 
+/* ===== Badges ===== */
 .badge.bg-success {
   background-color: #10b981 !important;
-  border: 1px solid #10b981;
 }
 
 .badge.bg-secondary {
   background-color: var(--muted) !important;
-  border: 1px solid var(--muted);
 }
 
+.badge.bg-primary {
+  background-color: var(--accent) !important;
+}
+
+.badge.bg-warning {
+  background-color: #f59e0b !important;
+  color: #fff !important;
+}
+
+/* ===== Tables ===== */
+.table {
+  color: var(--text);
+}
+
+.table > thead {
+  background-color: var(--accent-lighter);
+  color: var(--text);
+}
+
+.table > thead th {
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  padding: 12px;
+}
+
+.table > tbody td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: var(--accent-lighter);
+  color: var(--text);
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: var(--accent-light);
+  color: var(--text);
+}
+
+/* ===== Footer ===== */
 footer.footer {
-  background: var(--bg-1);
+  background: var(--bg-0);
   border-top: 1px solid var(--border) !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px;
+  color: var(--muted);
 }
 
+footer.footer a {
+  color: var(--accent);
+}
+
+/* ===== Custom Components ===== */
 .neon-panel {
   border: 1px solid var(--border);
   background: var(--card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  box-shadow: 0 2px 12px var(--shadow);
+  border-radius: 12px;
 }
 
 .neon-glow {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
   font-family: 'Poppins', sans-serif;
 }
 
+/* ===== Breadcrumb ===== */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: var(--accent);
+}
+
+.breadcrumb-item.active {
+  color: var(--muted);
+}
+
+/* ===== Dropdown ===== */
+.dropdown-menu {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px var(--shadow);
+  border-radius: 10px;
+}
+
+.dropdown-item {
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 16px;
+}
+
+.dropdown-item:hover {
+  background-color: var(--accent-light);
+  color: var(--accent);
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+/* ===== Form Floating ===== */
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
+  color: var(--muted);
   text-align: end;
 }
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* ===== Page Header ===== */
+.page-header {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ===== Utility: Purple Highlight Section ===== */
+.hero-section {
+  background: linear-gradient(135deg, var(--accent) 0%, #9333ea 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 48px 32px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.hero-section h1 {
+  font-weight: 700;
+  color: #fff;
+}
+
+.hero-section p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.1rem;
+}
+
+/* ===== Product Card Hover ===== */
+.product-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px var(--shadow-hover);
+}
+
+/* ===== Input Group Fix ===== */
+.input-group .btn {
+  border-color: var(--border);
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }

@@ -19,9 +19,43 @@ public class HomeController : Controller
     {
         var products = _db.Products
             .Include(p => p.Category)
+            .Include(p => p.Promotionproducts)
+            .ThenInclude(pp => pp.Promotion)
             .OrderByDescending(p => p.CreatedAt)
             .Take(12)
             .ToList();
+
+        var now = DateTime.Now;
+        var discountMap = new Dictionary<int, decimal>();
+        foreach (var p in products)
+        {
+            var originalPrice = p.Price ?? 0;
+            var activePromo = p.Promotionproducts?
+                .Select(pp => pp.Promotion)
+                .FirstOrDefault(promo =>
+                    promo != null &&
+                    promo.IsActive == true &&
+                    promo.StartDate <= now &&
+                    promo.EndDate >= now);
+
+            if (activePromo != null)
+            {
+                if (activePromo.DiscountType == "percentage" && activePromo.DiscountValue.HasValue)
+                    discountMap[p.Id] = Math.Round(originalPrice * (1 - activePromo.DiscountValue.Value / 100), 2);
+                else if (activePromo.DiscountType == "fixed" && activePromo.DiscountValue.HasValue)
+                {
+                    var r = originalPrice - activePromo.DiscountValue.Value;
+                    discountMap[p.Id] = r > 0 ? Math.Round(r, 2) : 0;
+                }
+                else
+                    discountMap[p.Id] = originalPrice;
+            }
+            else
+            {
+                discountMap[p.Id] = originalPrice;
+            }
+        }
+        ViewBag.DiscountMap = discountMap;
 
         return View(products);
     }

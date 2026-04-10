@@ -31,8 +31,21 @@
                 <i class="bi bi-folder"></i> @Model.Category?.Name
             </p>
 
+            @{
+                var discountedPrice = (decimal)(ViewBag.DiscountedPrice ?? (Model.Price ?? 0));
+                var hasPromo = discountedPrice < (Model.Price ?? 0);
+            }
             <div class="mb-4">
-                <span class="display-5 fw-bold">@Model.Price?.ToString("N2") ฿</span>
+                @if (hasPromo)
+                {
+                    <div class="text-muted text-decoration-line-through fs-5">@Model.Price?.ToString("N2") ฿</div>
+                    <span class="display-5 fw-bold" style="color: var(--accent);">@discountedPrice.ToString("N2") ฿</span>
+                    <span class="badge bg-danger fs-6 ms-2">Sale</span>
+                }
+                else
+                {
+                    <span class="display-5 fw-bold" style="color: var(--accent);">@Model.Price?.ToString("N2") ฿</span>
+                }
             </div>
 
             @if (!string.IsNullOrWhiteSpace(Model.Description))
@@ -59,13 +72,78 @@
             </div>
 
             <div class="d-grid gap-2 d-md-flex">
-                <button class="btn btn-primary btn-lg" @(Model.Stock <= 0 ? "disabled" : "")>
+                <button class="btn btn-primary btn-lg" id="addToCartBtn" @(Model.Stock <= 0 ? "disabled" : "") onclick="addToCart(@Model.Id)">
                     <i class="bi bi-cart-plus"></i> Add to Cart
                 </button>
-                <a asp-controller="Products" asp-action="Index" class="btn btn-outline-light btn-lg">
+                <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary btn-lg">
                     <i class="bi bi-arrow-left"></i> Back to Products
                 </a>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function addToCart(productId) {
+            const button = document.getElementById('addToCartBtn');
+            const originalText = button.innerHTML;
+            
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
+            
+            $.ajax({
+                url: '@Url.Action("AddToCart", "Cart")',
+                type: 'POST',
+                data: { productId: productId, quantity: 1 },
+                success: function(response) {
+                    if (response.success) {
+                        button.innerHTML = '<i class="bi bi-check-circle"></i> Added!';
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.classList.remove('btn-success');
+                            button.classList.add('btn-primary');
+                            button.disabled = false;
+                        }, 2000);
+                        
+                        updateCartCount(response.cartCount);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Failed to add item to cart',
+                            confirmButtonColor: '#7c3aed',
+                            background: '#ffffff',
+                            color: '#2d2a3e'
+                        });
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error adding item to cart. Please login first.',
+                        confirmButtonColor: '#7c3aed',
+                        background: '#ffffff',
+                        color: '#2d2a3e'
+                    });
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            });
+        }
+        
+        function updateCartCount(count) {
+            const cartCountElement = document.getElementById('cart-count');
+            if (cartCountElement) {
+                cartCountElement.textContent = count;
+                cartCountElement.style.display = count > 0 ? 'inline' : 'none';
+            }
+        }
+    </script>
+}

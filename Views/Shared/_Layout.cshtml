@@ -30,31 +30,21 @@
                     <ul class="navbar-nav me-3">
                         @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Index">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-gear"></i>
                                     <span>Admin</span>
                                 </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Products">
-                                    <i class="bi bi-box"></i>
-                                    <span>Products</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="CreateProduct">
-                                    <i class="bi bi-plus-circle"></i>
-                                    <span>Add Product</span>
-                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Orders"><i class="bi bi-receipt me-2"></i>Orders</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Products"><i class="bi bi-box me-2"></i>Products</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Promotions"><i class="bi bi-lightning-charge me-2"></i>Promotions</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Users</a></li>
+                                </ul>
                             </li>
                         }
-                        @* <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house"></i>
-                                <span>Home</span>
-                            </a>
-                        </li> *@
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Products" asp-action="Index">
                                 <i class="bi bi-grid"></i>
@@ -67,10 +57,22 @@
                                 <span>Promotions</span>
                             </a>
                         </li>
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Order" asp-action="MyOrders">
+                                    <i class="bi bi-list-ul"></i>
+                                    <span>My Orders</span>
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Cart" asp-action="Index">
+                            <a class="nav-link d-flex align-items-center gap-2 position-relative" asp-area="" asp-controller="Cart" asp-action="Index">
                                 <i class="bi bi-cart"></i>
                                 <span>Cart</span>
+                                <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 0.6em;">
+                                    0
+                                </span>
                             </a>
                         </li>
                     </ul>
@@ -79,16 +81,6 @@
                     <ul class="navbar-nav">
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Admin" asp-action="Users">
-                                        <i class="bi bi-people"></i>
-                                        <span>Users</span>
-                                    </a>
-                                </li>
-                            }
-
                             <li class="nav-item">
                                 <a class="nav-link d-flex align-items-center gap-2" asp-area="" asp-controller="Profile" asp-action="Index">
                                     <i class="bi bi-person-circle"></i>
@@ -147,9 +139,9 @@
                 icon: '@(TempData["SwalIcon"]?.ToString() ?? "success")',
                 title: '@(TempData["SwalTitle"]?.ToString() ?? "Success")',
                 text: '@TempData["SwalMessage"]',
-                confirmButtonColor: '#b100ff',
-                background: '#140c24',
-                color: '#e9e3ff'
+                confirmButtonColor: '#7c3aed',
+                background: '#ffffff',
+                color: '#2d2a3e'
             });
         </script>
     }

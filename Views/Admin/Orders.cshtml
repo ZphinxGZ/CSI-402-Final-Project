@@ -1,0 +1,83 @@
+@model List<Order>
+@{
+    ViewData["Title"] = "Manage Orders";
+    var statusFilter = ViewData["statusFilter"]?.ToString();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="neon-glow mb-0"><i class="bi bi-receipt me-2"></i>Order Management</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-action="Orders" class="btn @(statusFilter == null ? "btn-primary" : "btn-outline-secondary") btn-sm">All</a>
+            <a asp-action="Orders" asp-route-status="Pending" class="btn @(statusFilter == "Pending" ? "btn-primary" : "btn-outline-secondary") btn-sm">Pending</a>
+            <a asp-action="Orders" asp-route-status="Processing" class="btn @(statusFilter == "Processing" ? "btn-primary" : "btn-outline-secondary") btn-sm">Processing</a>
+            <a asp-action="Orders" asp-route-status="Shipped" class="btn @(statusFilter == "Shipped" ? "btn-primary" : "btn-outline-secondary") btn-sm">Shipped</a>
+            <a asp-action="Orders" asp-route-status="Delivered" class="btn @(statusFilter == "Delivered" ? "btn-primary" : "btn-outline-secondary") btn-sm">Delivered</a>
+            <a asp-action="Orders" asp-route-status="Cancelled" class="btn @(statusFilter == "Cancelled" ? "btn-primary" : "btn-outline-secondary") btn-sm">Cancelled</a>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-receipt" style="font-size: 4rem; color: var(--muted);"></i>
+        <h4 class="mt-3">No orders found</h4>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model)
+                    {
+                        var badgeClass = order.Status switch
+                        {
+                            "Pending" => "bg-warning",
+                            "Processing" => "bg-primary",
+                            "Shipped" => "bg-info",
+                            "Delivered" => "bg-success",
+                            "Cancelled" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                        <tr>
+                            <td class="fw-bold">#@order.Id</td>
+                            <td>
+                                <div>@order.User?.Name @order.User?.Lastname</div>
+                                <small class="text-muted">@order.User?.Email</small>
+                            </td>
+                            <td>@order.Orderitems.Count item(s)</td>
+                            <td class="fw-bold">@order.FinalPrice?.ToString("N2") ฿</td>
+                            <td><span class="badge @badgeClass">@order.Status</span></td>
+                            <td>@order.CreatedAt?.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <a asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

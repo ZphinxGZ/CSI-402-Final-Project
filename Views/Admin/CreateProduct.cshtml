@@ -77,7 +77,7 @@
             </div>
             <div class="card-body">
                 <div id="imagePreview" class="text-center">
-                    <div class="d-flex align-items-center justify-content-center" style="height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;">
+                    <div class="d-flex align-items-center justify-content-center" style="height: 200px; background: var(--accent-lighter); border-radius: 6px;">
                         <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
                     </div>
                 </div>
@@ -93,9 +93,9 @@
             const preview = document.getElementById('imagePreview');
             
             if (url) {
-                preview.innerHTML = `<img src="${url}" style="max-width: 100%; height: 200px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'d-flex align-items-center justify-content-center\\' style=\\'height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;\\'><i class=\\'bi bi-image\\' style=\\'font-size: 3rem; color: var(--muted);\\'></i></div>';">`;
+                preview.innerHTML = `<img src="${url}" style="max-width: 100%; height: 200px; object-fit: cover; border-radius: 6px;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'d-flex align-items-center justify-content-center\\' style=\\'height: 200px; background: var(--accent-lighter); border-radius: 6px;\\'><i class=\\'bi bi-image\\' style=\\'font-size: 3rem; color: var(--muted);\\'></i></div>';">`;
             } else {
-                preview.innerHTML = `<div class="d-flex align-items-center justify-content-center" style="height: 200px; background: rgba(124, 58, 237, 0.1); border-radius: 6px;">
+                preview.innerHTML = `<div class="d-flex align-items-center justify-content-center" style="height: 200px; background: var(--accent-lighter); border-radius: 6px;">
                     <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
                 </div>`;
             }
