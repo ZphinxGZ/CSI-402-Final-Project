@@ -74,19 +74,19 @@
 
                     <div class="d-flex justify-content-between mb-1">
                         <span>Subtotal:</span>
-                        <span>@Model.TotalPrice?.ToString("N2") ฿</span>
+                        <span>@Model.TotalPrice.ToString("N2") ฿</span>
                     </div>
                     @if (Model.Discount > 0)
                     {
                         <div class="d-flex justify-content-between mb-1 text-success">
                             <span><i class="bi bi-tag me-1"></i>Discount:</span>
-                            <span>-@Model.Discount?.ToString("N2") ฿</span>
+                            <span>-@Model.Discount.ToString("N2") ฿</span>
                         </div>
                     }
                     <hr />
                     <div class="d-flex justify-content-between fw-bold fs-5">
                         <span>Total:</span>
-                        <span style="color: var(--accent);">@Model.FinalPrice?.ToString("N2") ฿</span>
+                        <span style="color: var(--accent);">@Model.FinalPrice.ToString("N2") ฿</span>
                     </div>
                 </div>
             </div>

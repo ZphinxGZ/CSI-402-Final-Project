@@ -17,18 +17,20 @@ public class OrderController : Controller
         _db = db;
     }
 
+    // หน้า Checkout - แสดงสรุปก่อนสั่งซื้อ
     [HttpGet]
     public IActionResult Checkout()
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null) return Challenge();
 
+        // ดึงตะกร้าพร้อมสินค้า
         var cart = _db.Carts
             .Include(c => c.Cartitems)
             .ThenInclude(ci => ci.Product)
             .FirstOrDefault(c => c.UserId == userId);
 
-        if (cart == null || !cart.Cartitems.Any())
+        if (cart == null || cart.Cartitems.Count == 0)
         {
             TempData["SwalIcon"] = "warning";
             TempData["SwalTitle"] = "Cart Empty";
@@ -36,54 +38,72 @@ public class OrderController : Controller
             return RedirectToAction("Index", "Cart");
         }
 
+        // ดึงที่อยู่จัดส่ง
         var addresses = _db.Shippingaddresses
             .Where(a => a.UserId == userId)
             .ToList();
 
-        var items = new List<CheckoutItemViewModel>();
+        // เช็คว่าเป็นลูกค้าใหม่หรือไม่ (ยังไม่เคยสั่งซื้อ)
+        bool isNewCustomer = !_db.Orders.Any(o => o.UserId == userId);
+
+        // สร้าง ViewModel
+        var viewModel = new CheckoutViewModel();
+        viewModel.Addresses = addresses;
+        viewModel.IsNewCustomer = isNewCustomer;
         decimal subTotal = 0;
-        decimal discount = 0;
+        decimal promoDiscount = 0;
 
         foreach (var ci in cart.Cartitems)
         {
-            var product = ci.Product;
-            if (product == null) continue;
+            if (ci.Product == null) continue;
 
-            var originalPrice = product.Price ?? 0;
-            var finalPrice = GetDiscountedPrice(product.Id, originalPrice);
-            var itemDiscount = (originalPrice - finalPrice) * (ci.Quantity ?? 0);
+            decimal originalPrice = ci.Product.Price ?? 0;
+            // ดึงราคาหลังลด + ชื่อโปรโมชั่น
+            string promoName = "";
+            decimal discountPercent = 0;
+            decimal finalPrice = GetDiscountedPriceWithInfo(ci.Product.Id, originalPrice, out promoName, out discountPercent);
+            int qty = ci.Quantity ?? 0;
 
-            items.Add(new CheckoutItemViewModel
-            {
-                ProductId = product.Id,
-                ProductName = product.Name ?? "Unknown",
-                ImageUrl = product.ImageUrl,
-                Quantity = ci.Quantity ?? 0,
-                OriginalPrice = originalPrice,
-                FinalPrice = finalPrice
-            });
+            var item = new CheckoutItemViewModel();
+            item.ProductId = ci.Product.Id;
+            item.ProductName = ci.Product.Name ?? "Unknown";
+            item.ImageUrl = ci.Product.ImageUrl;
+            item.Quantity = qty;
+            item.OriginalPrice = originalPrice;
+            item.FinalPrice = finalPrice;
+            item.TotalPrice = finalPrice * qty;
+            item.HasDiscount = finalPrice < originalPrice;
+            item.PromotionName = promoName;
+            item.DiscountPercent = discountPercent;
 
-            subTotal += originalPrice * (ci.Quantity ?? 0);
-            discount += itemDiscount;
+            viewModel.Items.Add(item);
+
+            subTotal += originalPrice * qty;
+            promoDiscount += (originalPrice - finalPrice) * qty;
         }
 
-        var vm = new CheckoutViewModel
-        {
-            Items = items,
-            Addresses = addresses,
-            SubTotal = subTotal,
-            Discount = discount,
-            Total = subTotal - discount
-        };
+        viewModel.SubTotal = subTotal;
+        viewModel.Discount = promoDiscount;
 
-        return View(vm);
+        // ถ้าเป็นลูกค้าใหม่ ลดเพิ่ม 5% จากยอดหลังหักโปร
+        decimal afterPromo = subTotal - promoDiscount;
+        decimal newCustDiscount = 0;
+        if (isNewCustomer)
+        {
+            newCustDiscount = Math.Round(afterPromo * 5m / 100m, 2);
+        }
+        viewModel.NewCustomerDiscount = newCustDiscount;
+        viewModel.Total = afterPromo - newCustDiscount;
+
+        return View(viewModel);
     }
 
+    // สั่งซื้อ - สร้าง Order จากตะกร้า
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult PlaceOrder(int? selectedAddressId)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null) return Challenge();
 
         var cart = _db.Carts
@@ -91,7 +111,7 @@ public class OrderController : Controller
             .ThenInclude(ci => ci.Product)
             .FirstOrDefault(c => c.UserId == userId);
 
-        if (cart == null || !cart.Cartitems.Any())
+        if (cart == null || cart.Cartitems.Count == 0)
         {
             TempData["SwalIcon"] = "error";
             TempData["SwalTitle"] = "Error";
@@ -99,64 +119,76 @@ public class OrderController : Controller
             return RedirectToAction("Index", "Cart");
         }
 
-        decimal totalPrice = 0;
-        decimal totalDiscount = 0;
+        // เช็คว่าเป็นลูกค้าใหม่หรือไม่ (ยังไม่เคยสั่งซื้อ)
+        bool isNewCustomer = !_db.Orders.Any(o => o.UserId == userId);
 
-        var order = new Order
-        {
-            UserId = userId,
-            Status = "Pending",
-            CreatedAt = DateTime.Now
-        };
-
+        // สร้าง Order ใหม่
+        var order = new Order();
+        order.UserId = userId;
+        order.Status = "Pending";
+        order.CreatedAt = DateTime.Now;
         _db.Orders.Add(order);
         _db.SaveChanges();
 
+        decimal totalPrice = 0;
+        decimal promoDiscount = 0;
+
+        // วนลูปสินค้าในตะกร้า สร้าง OrderItem
         foreach (var ci in cart.Cartitems)
         {
-            var product = ci.Product;
-            if (product == null) continue;
+            if (ci.Product == null) continue;
 
-            var originalPrice = product.Price ?? 0;
-            var finalPrice = GetDiscountedPrice(product.Id, originalPrice);
-            var qty = ci.Quantity ?? 0;
+            decimal originalPrice = ci.Product.Price ?? 0;
+            string promoName = "";
+            decimal discountPct = 0;
+            decimal finalPrice = GetDiscountedPriceWithInfo(ci.Product.Id, originalPrice, out promoName, out discountPct);
+            int qty = ci.Quantity ?? 0;
 
-            var orderItem = new Orderitem
-            {
-                OrderId = order.Id,
-                ProductId = product.Id,
-                Quantity = qty,
-                Price = finalPrice
-            };
-
+            // สร้าง OrderItem
+            var orderItem = new Orderitem();
+            orderItem.OrderId = order.Id;
+            orderItem.ProductId = ci.Product.Id;
+            orderItem.Quantity = qty;
+            orderItem.Price = finalPrice;
             _db.Orderitems.Add(orderItem);
 
             totalPrice += originalPrice * qty;
-            totalDiscount += (originalPrice - finalPrice) * qty;
+            promoDiscount += (originalPrice - finalPrice) * qty;
 
-            // Reduce stock
-            if (product.Stock.HasValue)
+            // ลด Stock
+            if (ci.Product.Stock != null)
             {
-                product.Stock -= qty;
-                if (product.Stock < 0) product.Stock = 0;
+                ci.Product.Stock -= qty;
+                if (ci.Product.Stock < 0) ci.Product.Stock = 0;
             }
         }
 
+        // คำนวณส่วนลดลูกค้าใหม่ 5%
+        decimal afterPromo = totalPrice - promoDiscount;
+        decimal newCustDiscount = 0;
+        if (isNewCustomer)
+        {
+            newCustDiscount = Math.Round(afterPromo * 5m / 100m, 2);
+        }
+        decimal totalDiscount = promoDiscount + newCustDiscount;
+
+        // อัพเดทราคารวม
         order.TotalPrice = totalPrice;
         order.Discount = totalDiscount;
         order.FinalPrice = totalPrice - totalDiscount;
 
-        // Clear cart
+        // ลบสินค้าในตะกร้า
         _db.Cartitems.RemoveRange(cart.Cartitems);
         _db.SaveChanges();
 
         return RedirectToAction("Confirmation", new { id = order.Id });
     }
 
+    // หน้ายืนยันคำสั่งซื้อ
     [HttpGet]
     public IActionResult Confirmation(int id)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null) return Challenge();
 
         var order = _db.Orders
@@ -166,14 +198,15 @@ public class OrderController : Controller
 
         if (order == null) return NotFound();
 
-        var vm = MapOrderToViewModel(order);
-        return View(vm);
+        var viewModel = BuildOrderViewModel(order);
+        return View(viewModel);
     }
 
+    // ประวัติคำสั่งซื้อ
     [HttpGet]
     public IActionResult MyOrders()
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null) return Challenge();
 
         var orders = _db.Orders
@@ -183,14 +216,21 @@ public class OrderController : Controller
             .OrderByDescending(o => o.CreatedAt)
             .ToList();
 
-        var vm = orders.Select(o => MapOrderToViewModel(o)).ToList();
-        return View(vm);
+        // สร้าง list ของ ViewModel
+        var viewModelList = new List<OrderViewModel>();
+        foreach (var order in orders)
+        {
+            viewModelList.Add(BuildOrderViewModel(order));
+        }
+
+        return View(viewModelList);
     }
 
+    // รายละเอียดคำสั่งซื้อ
     [HttpGet]
     public IActionResult Details(int id)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null) return Challenge();
 
         var order = _db.Orders
@@ -200,16 +240,53 @@ public class OrderController : Controller
 
         if (order == null) return NotFound();
 
-        var vm = MapOrderToViewModel(order);
-        return View(vm);
+        var viewModel = BuildOrderViewModel(order);
+        return View(viewModel);
     }
 
-    // === Helper Methods ===
+    // ===== Private Helper Methods =====
 
-    private decimal GetDiscountedPrice(int productId, decimal originalPrice)
+    // สร้าง OrderViewModel จาก Order
+    private OrderViewModel BuildOrderViewModel(Order order)
     {
+        var viewModel = new OrderViewModel();
+        viewModel.Id = order.Id;
+        viewModel.Status = order.Status;
+        viewModel.TotalPrice = order.TotalPrice ?? 0;
+        viewModel.Discount = order.Discount ?? 0;
+        viewModel.FinalPrice = order.FinalPrice ?? 0;
+        viewModel.CreatedAt = order.CreatedAt;
+
+        if (order.User != null)
+        {
+            viewModel.UserName = order.User.Name + " " + order.User.Lastname;
+            viewModel.UserEmail = order.User.Email ?? "";
+        }
+
+        // วนลูปสร้าง OrderItemViewModel
+        foreach (var oi in order.Orderitems)
+        {
+            var item = new OrderItemViewModel();
+            item.ProductName = oi.Product != null ? oi.Product.Name ?? "Unknown" : "Unknown";
+            item.ImageUrl = oi.Product != null ? oi.Product.ImageUrl : null;
+            item.Quantity = oi.Quantity ?? 0;
+            item.Price = oi.Price ?? 0;
+            item.Total = item.Price * item.Quantity;
+
+            viewModel.Items.Add(item);
+        }
+
+        return viewModel;
+    }
+
+    // คำนวณราคาหลังส่วนลด พร้อมส่งชื่อโปรโมชั่นกลับมาด้วย
+    private decimal GetDiscountedPriceWithInfo(int productId, decimal originalPrice, out string promotionName, out decimal discountPct)
+    {
+        promotionName = "";
+        discountPct = 0;
         var now = DateTime.Now;
 
+        // หา Promotion ที่ใช้งานอยู่
         var promoProduct = _db.Promotionproducts
             .Include(pp => pp.Promotion)
             .FirstOrDefault(pp =>
@@ -219,49 +296,35 @@ public class OrderController : Controller
                 pp.Promotion.StartDate <= now &&
                 pp.Promotion.EndDate >= now);
 
-        if (promoProduct?.Promotion == null) return originalPrice;
+        if (promoProduct == null || promoProduct.Promotion == null)
+        {
+            return originalPrice;
+        }
 
         var promo = promoProduct.Promotion;
 
-        if (promo.DiscountType == "percentage" && promo.DiscountValue.HasValue)
+        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
+        if (promo.DiscountValue != null && promo.DiscountValue > 0)
         {
-            return Math.Round(originalPrice * (1 - promo.DiscountValue.Value / 100), 2);
-        }
-        else if (promo.DiscountType == "fixed" && promo.DiscountValue.HasValue)
-        {
-            var result = originalPrice - promo.DiscountValue.Value;
-            return result > 0 ? Math.Round(result, 2) : 0;
+            decimal percent = promo.DiscountValue.Value;
+            if (percent > 100) percent = 100;
+            decimal discountAmount = originalPrice * percent / 100;
+            decimal result = Math.Round(originalPrice - discountAmount, 2);
+            if (result < 0) result = 0;
+
+            promotionName = promo.Name ?? "Promotion";
+            discountPct = percent;
+            return result;
         }
 
         return originalPrice;
     }
 
-    private OrderViewModel MapOrderToViewModel(Order order)
-    {
-        return new OrderViewModel
-        {
-            Id = order.Id,
-            Status = order.Status,
-            TotalPrice = order.TotalPrice,
-            Discount = order.Discount,
-            FinalPrice = order.FinalPrice,
-            CreatedAt = order.CreatedAt,
-            UserName = order.User?.Name,
-            UserEmail = order.User?.Email,
-            Items = order.Orderitems.Select(oi => new OrderItemViewModel
-            {
-                ProductName = oi.Product?.Name ?? "Unknown",
-                ImageUrl = oi.Product?.ImageUrl,
-                Quantity = oi.Quantity ?? 0,
-                Price = oi.Price ?? 0
-            }).ToList()
-        };
-    }
-
+    // ดึง UserId จาก Cookie
     private int? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (claim != null && int.TryParse(claim.Value, out int userId))
         {
             return userId;
         }

@@ -17,44 +17,56 @@ public class CartController : Controller
         _db = db;
     }
 
+    // แสดงหน้าตะกร้าสินค้า
     [HttpGet]
     public IActionResult Index()
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null)
         {
             return Challenge();
         }
 
         var cart = GetOrCreateCart(userId.Value);
-        var cartViewModel = new CartViewModel
-        {
-            CartId = cart.Id,
-            Items = cart.Cartitems.Select(item =>
-            {
-                var originalPrice = item.Product?.Price ?? 0;
-                var discountedPrice = GetDiscountedPrice(item.ProductId ?? 0, originalPrice);
-                return new CartItemViewModel
-                {
-                    Id = item.Id,
-                    ProductId = item.ProductId ?? 0,
-                    ProductName = item.Product?.Name ?? "Unknown",
-                    OriginalPrice = originalPrice,
-                    Price = discountedPrice,
-                    Quantity = item.Quantity ?? 0,
-                    ImageUrl = item.Product?.ImageUrl,
-                    Stock = item.Product?.Stock ?? 0
-                };
-            }).ToList()
-        };
 
-        return View(cartViewModel);
+        // สร้าง ViewModel สำหรับแสดงผล
+        var viewModel = new CartViewModel();
+        viewModel.CartId = cart.Id;
+
+        // วนลูปสินค้าในตะกร้า
+        foreach (var item in cart.Cartitems)
+        {
+            if (item.Product == null) continue;
+
+            decimal originalPrice = item.Product.Price ?? 0;
+            decimal discountedPrice = GetDiscountedPrice(item.ProductId ?? 0, originalPrice);
+            int qty = item.Quantity ?? 0;
+
+            var cartItem = new CartItemViewModel();
+            cartItem.Id = item.Id;
+            cartItem.ProductId = item.ProductId ?? 0;
+            cartItem.ProductName = item.Product.Name ?? "Unknown";
+            cartItem.OriginalPrice = originalPrice;
+            cartItem.Price = discountedPrice;
+            cartItem.Quantity = qty;
+            cartItem.TotalPrice = discountedPrice * qty;
+            cartItem.HasDiscount = discountedPrice < originalPrice;
+            cartItem.ImageUrl = item.Product.ImageUrl;
+            cartItem.Stock = item.Product.Stock ?? 0;
+
+            viewModel.Items.Add(cartItem);
+            viewModel.TotalPrice += cartItem.TotalPrice;
+            viewModel.TotalItems += qty;
+        }
+
+        return View(viewModel);
     }
 
+    // เพิ่มสินค้าลงตะกร้า (AJAX)
     [HttpPost]
     public IActionResult AddToCart(int productId, int quantity = 1)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null)
         {
             return Json(new { success = false, message = "Please login to add items to cart." });
@@ -72,11 +84,22 @@ public class CartController : Controller
         }
 
         var cart = GetOrCreateCart(userId.Value);
-        
-        var existingItem = cart.Cartitems.FirstOrDefault(item => item.ProductId == productId);
+
+        // เช็คว่ามีสินค้าชิ้นนี้ในตะกร้าอยู่แล้วหรือไม่
+        Cartitem existingItem = null;
+        foreach (var item in cart.Cartitems)
+        {
+            if (item.ProductId == productId)
+            {
+                existingItem = item;
+                break;
+            }
+        }
+
         if (existingItem != null)
         {
-            var newQuantity = existingItem.Quantity + quantity;
+            // ถ้ามีอยู่แล้ว เพิ่มจำนวน
+            int newQuantity = (existingItem.Quantity ?? 0) + quantity;
             if (product.Stock < newQuantity)
             {
                 return Json(new { success = false, message = "Not enough stock available." });
@@ -85,35 +108,39 @@ public class CartController : Controller
         }
         else
         {
-            cart.Cartitems.Add(new Cartitem
-            {
-                ProductId = productId,
-                Quantity = quantity
-            });
+            // ถ้ายังไม่มี เพิ่มใหม่
+            var newItem = new Cartitem();
+            newItem.ProductId = productId;
+            newItem.Quantity = quantity;
+            cart.Cartitems.Add(newItem);
         }
 
         _db.SaveChanges();
 
-        return Json(new { 
-            success = true, 
-            message = "Product added to cart successfully.",
-            cartCount = cart.Cartitems.Sum(item => item.Quantity)
-        });
+        // นับจำนวนสินค้าทั้งหมดในตะกร้า
+        int cartCount = 0;
+        foreach (var item in cart.Cartitems)
+        {
+            cartCount += item.Quantity ?? 0;
+        }
+
+        return Json(new { success = true, message = "Product added to cart successfully.", cartCount = cartCount });
     }
 
+    // อัพเดทจำนวนสินค้า (AJAX)
     [HttpPost]
     public IActionResult UpdateQuantity(int itemId, int quantity)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null)
         {
             return Json(new { success = false, message = "Please login to update cart." });
         }
 
         var cartItem = _db.Cartitems
-            .Include(item => item.Product)
-            .Include(item => item.Cart)
-            .FirstOrDefault(item => item.Id == itemId && item.Cart != null && item.Cart.UserId == userId);
+            .Include(ci => ci.Product)
+            .Include(ci => ci.Cart)
+            .FirstOrDefault(ci => ci.Id == itemId && ci.Cart != null && ci.Cart.UserId == userId);
 
         if (cartItem == null)
         {
@@ -134,22 +161,22 @@ public class CartController : Controller
         }
 
         _db.SaveChanges();
-
         return Json(new { success = true, message = "Cart updated successfully." });
     }
 
+    // ลบสินค้าออกจากตะกร้า (AJAX)
     [HttpPost]
     public IActionResult RemoveFromCart(int itemId)
     {
-        var userId = GetCurrentUserId();
+        int? userId = GetCurrentUserId();
         if (userId == null)
         {
             return Json(new { success = false, message = "Please login to update cart." });
         }
 
         var cartItem = _db.Cartitems
-            .Include(item => item.Cart)
-            .FirstOrDefault(item => item.Id == itemId && item.Cart != null && item.Cart.UserId == userId);
+            .Include(ci => ci.Cart)
+            .FirstOrDefault(ci => ci.Id == itemId && ci.Cart != null && ci.Cart.UserId == userId);
 
         if (cartItem == null)
         {
@@ -162,10 +189,12 @@ public class CartController : Controller
         return Json(new { success = true, message = "Item removed from cart." });
     }
 
+    // คำนวณราคาหลังส่วนลด
     private decimal GetDiscountedPrice(int productId, decimal originalPrice)
     {
         var now = DateTime.Now;
 
+        // หา Promotion ที่ใช้งานอยู่สำหรับสินค้านี้
         var promoProduct = _db.Promotionproducts
             .Include(pp => pp.Promotion)
             .FirstOrDefault(pp =>
@@ -175,52 +204,61 @@ public class CartController : Controller
                 pp.Promotion.StartDate <= now &&
                 pp.Promotion.EndDate >= now);
 
-        if (promoProduct?.Promotion == null) return originalPrice;
+        // ถ้าไม่มีโปรโมชั่น ใช้ราคาเดิม
+        if (promoProduct == null || promoProduct.Promotion == null)
+        {
+            return originalPrice;
+        }
 
         var promo = promoProduct.Promotion;
 
-        if (promo.DiscountType == "percentage" && promo.DiscountValue.HasValue)
+        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
+        if (promo.DiscountValue != null && promo.DiscountValue > 0)
         {
-            return Math.Round(originalPrice * (1 - promo.DiscountValue.Value / 100), 2);
-        }
-        else if (promo.DiscountType == "fixed" && promo.DiscountValue.HasValue)
-        {
-            var result = originalPrice - promo.DiscountValue.Value;
-            return result > 0 ? Math.Round(result, 2) : 0;
+            decimal discountPercent = promo.DiscountValue.Value;
+            if (discountPercent > 100) discountPercent = 100;
+            decimal discountAmount = originalPrice * discountPercent / 100;
+            decimal result = Math.Round(originalPrice - discountAmount, 2);
+            if (result < 0) result = 0;
+            return result;
         }
 
         return originalPrice;
     }
 
+    // ดึง UserId จาก Cookie
     private int? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (claim != null && int.TryParse(claim.Value, out int userId))
         {
             return userId;
         }
         return null;
     }
 
+    // ดึงตะกร้าของ User หรือสร้างใหม่ถ้ายังไม่มี
     private Cart GetOrCreateCart(int userId)
     {
         var cart = _db.Carts
             .Include(c => c.Cartitems)
-            .ThenInclude(item => item.Product)
+            .ThenInclude(ci => ci.Product)
             .FirstOrDefault(c => c.UserId == userId);
 
         if (cart == null)
         {
-            cart = new Cart { UserId = userId };
+            cart = new Cart();
+            cart.UserId = userId;
             _db.Carts.Add(cart);
             _db.SaveChanges();
-            
+
+            // โหลดข้อมูลตะกร้าใหม่พร้อม Product
             cart = _db.Carts
                 .Include(c => c.Cartitems)
-                .ThenInclude(item => item.Product)
+                .ThenInclude(ci => ci.Product)
                 .FirstOrDefault(c => c.UserId == userId);
         }
 
-        return cart ?? throw new InvalidOperationException("Failed to create or retrieve cart.");
+        return cart;
     }
 }

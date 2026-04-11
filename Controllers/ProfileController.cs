@@ -90,7 +90,7 @@ public class ProfileController : Controller
         TempData["SwalTitle"] = "Profile Updated";
         TempData["SwalMessage"] = "Your profile has been updated successfully.";
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction("Index");
     }
 
     [HttpGet]
@@ -127,7 +127,7 @@ public class ProfileController : Controller
         TempData["SwalTitle"] = "Password Changed";
         TempData["SwalMessage"] = "Your password has been changed successfully.";
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction("Index");
     }
 
     [HttpGet]
@@ -176,7 +176,7 @@ public class ProfileController : Controller
         TempData["SwalTitle"] = "Address Added";
         TempData["SwalMessage"] = "Shipping address has been added.";
 
-        return RedirectToAction(nameof(Addresses));
+        return RedirectToAction("Addresses");
     }
 
     [HttpGet]
@@ -233,7 +233,7 @@ public class ProfileController : Controller
         TempData["SwalTitle"] = "Address Updated";
         TempData["SwalMessage"] = "Shipping address has been updated.";
 
-        return RedirectToAction(nameof(Addresses));
+        return RedirectToAction("Addresses");
     }
 
     [HttpPost]
@@ -257,6 +257,6 @@ public class ProfileController : Controller
         TempData["SwalTitle"] = "Address Deleted";
         TempData["SwalMessage"] = "Shipping address has been deleted.";
 
-        return RedirectToAction(nameof(Addresses));
+        return RedirectToAction("Addresses");
     }
 }

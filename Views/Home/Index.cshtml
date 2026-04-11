@@ -1,6 +1,8 @@
 ﻿@model List<Product>
 @{
     ViewData["Title"] = "Home";
+    var activePromotions = ViewBag.ActivePromotions as List<Promotion> ?? new List<Promotion>();
+    var dMap = ViewBag.DiscountMap as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
 }
 
 <div class="hero-section mb-4">
@@ -11,6 +13,104 @@
     </a>
 </div>
 
+@* ===== โปรโมชั่นที่กำลัง Active ===== *@
+@if (activePromotions.Any())
+{
+    <h3 class="fw-bold mb-3"><i class="bi bi-lightning-charge me-2" style="color: var(--accent);"></i>Active Promotions</h3>
+    <div class="row g-3 mb-4">
+        @foreach (var promo in activePromotions)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0" style="background: linear-gradient(135deg, var(--accent), #9333ea); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="fw-bold mb-1">@promo.Name</h5>
+                                @if (!string.IsNullOrWhiteSpace(promo.Description))
+                                {
+                                    <p class="mb-1 small opacity-75">@promo.Description</p>
+                                }
+                                <small class="opacity-75">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    @promo.StartDate?.ToString("dd MMM") - @promo.EndDate?.ToString("dd MMM yyyy")
+                                </small>
+                            </div>
+                            <span class="badge bg-light text-dark fs-6">@promo.DiscountValue% OFF</span>
+                        </div>
+                        @if (promo.Promotionproducts != null && promo.Promotionproducts.Any())
+                        {
+                            <div class="mt-2 d-flex gap-2 flex-wrap">
+                                @foreach (var pp in promo.Promotionproducts.Take(4))
+                                {
+                                    @if (pp.Product != null)
+                                    {
+                                        <a asp-controller="Products" asp-action="Details" asp-route-id="@pp.Product.Id" class="text-decoration-none">
+                                            @if (!string.IsNullOrWhiteSpace(pp.Product.ImageUrl))
+                                            {
+                                                <img src="@pp.Product.ImageUrl" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid white;" class="rounded" alt="@pp.Product.Name" />
+                                            }
+                                        </a>
+                                    }
+                                }
+                                @if (promo.Promotionproducts.Count > 4)
+                                {
+                                    <span class="d-flex align-items-center small opacity-75">+@(promo.Promotionproducts.Count - 4) more</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* ===== สินค้าที่กำลังลดราคา ===== *@
+@{
+    var saleProducts = new List<Product>();
+    foreach (var p in Model)
+    {
+        if (dMap.ContainsKey(p.Id) && dMap[p.Id] < (p.Price ?? 0))
+        {
+            saleProducts.Add(p);
+        }
+    }
+}
+
+@if (saleProducts.Any())
+{
+    <h3 class="fw-bold mb-3"><i class="bi bi-fire me-2" style="color: #ef4444;"></i>On Sale Now</h3>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        @foreach (var p in saleProducts)
+        {
+            <div class="col">
+                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none" style="color: inherit;">
+                    <div class="card h-100 product-card position-relative">
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-2 fs-6">SALE</span>
+                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                        {
+                            <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 220px;" alt="@p.Name" />
+                        }
+                        else
+                        {
+                            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: var(--accent-lighter);">
+                                <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
+                            </div>
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@p.Name</h5>
+                            <p class="text-muted mb-2">@p.Category?.Name</p>
+                            <small class="text-muted text-decoration-line-through">@p.Price?.ToString("N2") ฿</small><br />
+                            <span class="fw-bold fs-5" style="color: var(--accent);">@dMap[p.Id].ToString("N2") ฿</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+@* ===== สินค้าทั้งหมด ===== *@
 <h3 class="fw-bold mb-3"><i class="bi bi-stars me-2" style="color: var(--accent);"></i>Featured Products</h3>
 
 @if (!Model.Any())
@@ -23,45 +123,42 @@ else
         @foreach (var p in Model)
         {
             <div class="col">
-                <div class="card h-100 product-card">
-                    @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
-                    {
-                        <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 220px;" alt="@p.Name" />
-                    }
-                    else
-                    {
-                        <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: var(--accent-lighter);">
-                            <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
-                        </div>
-                    }
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">@p.Name</h5>
-                        <p class="text-muted mb-2">@p.Category?.Name</p>
-                        <div class="mt-auto">
-                            @{
-                                var dMap = ViewBag.DiscountMap as Dictionary<int, decimal>;
-                                var dPrice = dMap != null && dMap.ContainsKey(p.Id) ? dMap[p.Id] : (p.Price ?? 0);
-                                var hasDsc = dPrice < (p.Price ?? 0);
-                            }
-                            <div class="d-flex justify-content-between align-items-center">
+                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none" style="color: inherit;">
+                    <div class="card h-100 product-card">
+                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                        {
+                            <img src="@p.ImageUrl" class="card-img-top" style="object-fit: cover; height: 220px;" alt="@p.Name" />
+                        }
+                        else
+                        {
+                            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 220px; background: var(--accent-lighter);">
+                                <i class="bi bi-image" style="font-size: 3rem; color: var(--muted);"></i>
+                            </div>
+                        }
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@p.Name</h5>
+                            <p class="text-muted mb-2">@p.Category?.Name</p>
+                            <div class="mt-auto">
+                                @{
+                                    var dPrice = dMap.ContainsKey(p.Id) ? dMap[p.Id] : (p.Price ?? 0);
+                                    var hasDsc = dPrice < (p.Price ?? 0);
+                                }
                                 <div>
                                     @if (hasDsc)
                                     {
                                         <small class="text-muted text-decoration-line-through">@p.Price?.ToString("N2") ฿</small><br />
                                         <span class="fw-bold fs-5" style="color: var(--accent);">@dPrice.ToString("N2") ฿</span>
+                                        <span class="badge bg-danger ms-1">Sale</span>
                                     }
                                     else
                                     {
                                         <span class="fw-bold fs-5" style="color: var(--accent);">@p.Price?.ToString("N2") ฿</span>
                                     }
                                 </div>
-                                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
                             </div>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
         }
     </div>

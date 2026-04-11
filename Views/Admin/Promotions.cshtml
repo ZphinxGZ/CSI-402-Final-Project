@@ -52,14 +52,7 @@ else
                                 }
                             </td>
                             <td>
-                                @if (promo.DiscountType == "percentage")
-                                {
-                                    <span class="badge bg-primary">@promo.DiscountValue%</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-primary">@promo.DiscountValue?.ToString("N0") ฿</span>
-                                }
+                                <span class="badge bg-primary">@promo.DiscountValue% OFF</span>
                             </td>
                             <td>
                                 <small>@promo.StartDate?.ToString("dd MMM yyyy")</small><br />

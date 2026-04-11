@@ -32,14 +32,7 @@ else
                         </small>
                     </div>
                     <div class="text-end">
-                        @if (promo.DiscountType == "percentage")
-                        {
-                            <span class="badge bg-danger fs-6">@promo.DiscountValue% OFF</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-danger fs-6">@promo.DiscountValue?.ToString("N0") ฿ OFF</span>
-                        }
+                        <span class="badge bg-danger fs-6">@promo.DiscountValue% OFF</span>
                         <div class="mt-1">
                             @if (promo.IsActive == true)
                             {

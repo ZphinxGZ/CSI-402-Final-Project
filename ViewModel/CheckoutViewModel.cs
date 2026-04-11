@@ -10,16 +10,22 @@ public class CheckoutViewModel
     public decimal SubTotal { get; set; }
     public decimal Discount { get; set; }
     public decimal Total { get; set; }
+    // โปรโมชั่นลูกค้าใหม่
+    public bool IsNewCustomer { get; set; }
+    public decimal NewCustomerDiscount { get; set; }
 }
 
 public class CheckoutItemViewModel
 {
     public int ProductId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
+    public string ProductName { get; set; } = "";
     public string? ImageUrl { get; set; }
     public int Quantity { get; set; }
     public decimal OriginalPrice { get; set; }
     public decimal FinalPrice { get; set; }
-    public decimal TotalPrice => FinalPrice * Quantity;
-    public bool HasDiscount => FinalPrice < OriginalPrice;
+    public decimal TotalPrice { get; set; }
+    public bool HasDiscount { get; set; }
+    // ชื่อโปรโมชั่นที่ใช้
+    public string? PromotionName { get; set; }
+    public decimal DiscountPercent { get; set; }
 }

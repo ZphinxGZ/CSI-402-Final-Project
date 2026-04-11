@@ -23,13 +23,10 @@
                             <span asp-validation-for="Name" class="text-danger"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Discount</label>
+                            <label asp-for="DiscountValue" class="form-label">Discount (%)</label>
                             <div class="input-group">
-                                <select asp-for="DiscountType" class="form-select" style="max-width: 140px;">
-                                    <option value="percentage">Percentage %</option>
-                                    <option value="fixed">Fixed ฿</option>
-                                </select>
-                                <input asp-for="DiscountValue" class="form-control" placeholder="Value" />
+                                <input asp-for="DiscountValue" class="form-control" placeholder="e.g. 10, 20, 50" />
+                                <span class="input-group-text">%</span>
                             </div>
                             <span asp-validation-for="DiscountValue" class="text-danger"></span>
                         </div>
@@ -41,17 +38,13 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label asp-for="StartDate" class="form-label">Start Date</label>
                             <input asp-for="StartDate" type="datetime-local" class="form-control" />
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label asp-for="EndDate" class="form-label">End Date</label>
                             <input asp-for="EndDate" type="datetime-local" class="form-control" />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label asp-for="MinOrderAmount" class="form-label">Min Order Amount (optional)</label>
-                            <input asp-for="MinOrderAmount" class="form-control" placeholder="0" />
                         </div>
                     </div>
 

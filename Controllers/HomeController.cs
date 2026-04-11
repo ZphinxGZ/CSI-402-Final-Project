@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CSI_402_Final_Project.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +13,23 @@ public class HomeController : Controller
         _db = db;
     }
 
+    // หน้าแรก - แสดงโปรโมชั่น + สินค้าลดราคา + สินค้าล่าสุด
     [HttpGet]
     public IActionResult Index()
     {
+        var now = DateTime.Now;
+
+        // ดึงโปรโมชั่นที่ Active อยู่
+        var activePromotions = _db.Promotions
+            .Include(p => p.Promotionproducts)
+            .ThenInclude(pp => pp.Product)
+            .Where(p => p.IsActive == true && p.StartDate <= now && p.EndDate >= now)
+            .OrderByDescending(p => p.DiscountValue)
+            .ToList();
+
+        ViewBag.ActivePromotions = activePromotions;
+
+        // ดึงสินค้า 12 ชิ้นล่าสุด
         var products = _db.Products
             .Include(p => p.Category)
             .Include(p => p.Promotionproducts)
@@ -25,38 +38,42 @@ public class HomeController : Controller
             .Take(12)
             .ToList();
 
-        var now = DateTime.Now;
+        // คำนวณราคาหลังส่วนลด
         var discountMap = new Dictionary<int, decimal>();
+
         foreach (var p in products)
         {
-            var originalPrice = p.Price ?? 0;
-            var activePromo = p.Promotionproducts?
-                .Select(pp => pp.Promotion)
-                .FirstOrDefault(promo =>
-                    promo != null &&
-                    promo.IsActive == true &&
-                    promo.StartDate <= now &&
-                    promo.EndDate >= now);
+            decimal originalPrice = p.Price ?? 0;
+            decimal finalPrice = originalPrice;
 
-            if (activePromo != null)
+            // วนหาโปรโมชั่นที่ Active
+            if (p.Promotionproducts != null)
             {
-                if (activePromo.DiscountType == "percentage" && activePromo.DiscountValue.HasValue)
-                    discountMap[p.Id] = Math.Round(originalPrice * (1 - activePromo.DiscountValue.Value / 100), 2);
-                else if (activePromo.DiscountType == "fixed" && activePromo.DiscountValue.HasValue)
+                foreach (var pp in p.Promotionproducts)
                 {
-                    var r = originalPrice - activePromo.DiscountValue.Value;
-                    discountMap[p.Id] = r > 0 ? Math.Round(r, 2) : 0;
+                    if (pp.Promotion != null
+                        && pp.Promotion.IsActive == true
+                        && pp.Promotion.StartDate <= now
+                        && pp.Promotion.EndDate >= now)
+                    {
+                        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
+                        if (pp.Promotion.DiscountValue != null && pp.Promotion.DiscountValue > 0)
+                        {
+                            decimal discountPercent = pp.Promotion.DiscountValue.Value;
+                            if (discountPercent > 100) discountPercent = 100;
+                            decimal discountAmount = originalPrice * discountPercent / 100;
+                            finalPrice = Math.Round(originalPrice - discountAmount, 2);
+                            if (finalPrice < 0) finalPrice = 0;
+                        }
+                        break;
+                    }
                 }
-                else
-                    discountMap[p.Id] = originalPrice;
             }
-            else
-            {
-                discountMap[p.Id] = originalPrice;
-            }
-        }
-        ViewBag.DiscountMap = discountMap;
 
+            discountMap[p.Id] = finalPrice;
+        }
+
+        ViewBag.DiscountMap = discountMap;
         return View(products);
     }
 
@@ -64,10 +81,4 @@ public class HomeController : Controller
     {
         return View();
     }
-
-    // [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    // public IActionResult Error()
-    // {
-    //     return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    // }
 }

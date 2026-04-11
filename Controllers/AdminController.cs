@@ -16,6 +16,7 @@ public class AdminController : Controller
         _db = db;
     }
 
+    // หน้า Dashboard
     [HttpGet]
     public IActionResult Index()
     {
@@ -27,8 +28,9 @@ public class AdminController : Controller
         return View();
     }
 
-    // ===== ORDER MANAGEMENT =====
+    // ===== จัดการคำสั่งซื้อ =====
 
+    // แสดงรายการคำสั่งซื้อทั้งหมด
     [HttpGet]
     public IActionResult Orders(string? status = null)
     {
@@ -43,10 +45,11 @@ public class AdminController : Controller
             ViewData["statusFilter"] = status;
         }
 
-        var orders = query.OrderByDescending(o => o.CreatedAt).ToList();
+        var orders = query.OrderBy(o => o.Id).ToList();
         return View(orders);
     }
 
+    // แสดงรายละเอียดคำสั่งซื้อ
     [HttpGet]
     public IActionResult OrderDetails(int id)
     {
@@ -58,28 +61,37 @@ public class AdminController : Controller
 
         if (order == null) return NotFound();
 
-        var vm = new OrderViewModel
-        {
-            Id = order.Id,
-            Status = order.Status,
-            TotalPrice = order.TotalPrice,
-            Discount = order.Discount,
-            FinalPrice = order.FinalPrice,
-            CreatedAt = order.CreatedAt,
-            UserName = (order.User?.Name ?? "") + " " + (order.User?.Lastname ?? ""),
-            UserEmail = order.User?.Email,
-            Items = order.Orderitems.Select(oi => new OrderItemViewModel
-            {
-                ProductName = oi.Product?.Name ?? "Unknown",
-                ImageUrl = oi.Product?.ImageUrl,
-                Quantity = oi.Quantity ?? 0,
-                Price = oi.Price ?? 0
-            }).ToList()
-        };
+        // สร้าง ViewModel
+        var viewModel = new OrderViewModel();
+        viewModel.Id = order.Id;
+        viewModel.Status = order.Status;
+        viewModel.TotalPrice = order.TotalPrice ?? 0;
+        viewModel.Discount = order.Discount ?? 0;
+        viewModel.FinalPrice = order.FinalPrice ?? 0;
+        viewModel.CreatedAt = order.CreatedAt;
 
-        return View(vm);
+        if (order.User != null)
+        {
+            viewModel.UserName = (order.User.Name ?? "") + " " + (order.User.Lastname ?? "");
+            viewModel.UserEmail = order.User.Email ?? "";
+        }
+
+        // วนลูปสร้าง OrderItemViewModel
+        foreach (var oi in order.Orderitems)
+        {
+            var item = new OrderItemViewModel();
+            item.ProductName = oi.Product != null ? oi.Product.Name ?? "Unknown" : "Unknown";
+            item.ImageUrl = oi.Product != null ? oi.Product.ImageUrl : null;
+            item.Quantity = oi.Quantity ?? 0;
+            item.Price = oi.Price ?? 0;
+            item.Total = item.Price * item.Quantity;
+            viewModel.Items.Add(item);
+        }
+
+        return View(viewModel);
     }
 
+    // อัพเดทสถานะคำสั่งซื้อ
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult UpdateOrderStatus(int id, string status)
@@ -92,13 +104,14 @@ public class AdminController : Controller
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Status Updated";
-        TempData["SwalMessage"] = $"Order #{id} status changed to {status}.";
+        TempData["SwalMessage"] = "Order #" + id + " status changed to " + status + ".";
 
-        return RedirectToAction(nameof(OrderDetails), new { id });
+        return RedirectToAction("OrderDetails", new { id = id });
     }
 
-    // ===== PROMOTION MANAGEMENT =====
+    // ===== จัดการโปรโมชั่น =====
 
+    // แสดงรายการโปรโมชั่นทั้งหมด
     [HttpGet]
     public IActionResult Promotions()
     {
@@ -111,6 +124,7 @@ public class AdminController : Controller
         return View(promotions);
     }
 
+    // หน้าสร้างโปรโมชั่นใหม่
     [HttpGet]
     public IActionResult CreatePromotion()
     {
@@ -118,6 +132,7 @@ public class AdminController : Controller
         return View(new PromotionViewModel());
     }
 
+    // บันทึกโปรโมชั่นใหม่
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult CreatePromotion(PromotionViewModel vm)
@@ -128,29 +143,30 @@ public class AdminController : Controller
             return View(vm);
         }
 
-        var promotion = new Promotion
-        {
-            Name = vm.Name,
-            Description = vm.Description,
-            DiscountType = vm.DiscountType,
-            DiscountValue = vm.DiscountValue,
-            MinOrderAmount = vm.MinOrderAmount,
-            StartDate = vm.StartDate,
-            EndDate = vm.EndDate,
-            IsActive = vm.IsActive
-        };
+        // จำกัดส่วนลดไม่เกิน 0-100%
+        if (vm.DiscountValue < 0) vm.DiscountValue = 0;
+        if (vm.DiscountValue > 100) vm.DiscountValue = 100;
+
+        // สร้าง Promotion (ลดเป็น % เสมอ)
+        var promotion = new Promotion();
+        promotion.Name = vm.Name;
+        promotion.Description = vm.Description;
+        promotion.DiscountType = "percentage";
+        promotion.DiscountValue = vm.DiscountValue;
+        promotion.StartDate = vm.StartDate;
+        promotion.EndDate = vm.EndDate;
+        promotion.IsActive = vm.IsActive;
 
         _db.Promotions.Add(promotion);
         _db.SaveChanges();
 
-        // Add selected products
+        // เพิ่มสินค้าที่เลือก
         foreach (var productId in vm.SelectedProductIds)
         {
-            _db.Promotionproducts.Add(new Promotionproduct
-            {
-                PromotionId = promotion.Id,
-                ProductId = productId
-            });
+            var pp = new Promotionproduct();
+            pp.PromotionId = promotion.Id;
+            pp.ProductId = productId;
+            _db.Promotionproducts.Add(pp);
         }
         _db.SaveChanges();
 
@@ -158,9 +174,10 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Promotion Created";
         TempData["SwalMessage"] = "Promotion has been created successfully.";
 
-        return RedirectToAction(nameof(Promotions));
+        return RedirectToAction("Promotions");
     }
 
+    // หน้าแก้ไขโปรโมชั่น
     [HttpGet]
     public IActionResult EditPromotion(int id)
     {
@@ -170,24 +187,29 @@ public class AdminController : Controller
 
         if (promotion == null) return NotFound();
 
-        var vm = new PromotionViewModel
+        var vm = new PromotionViewModel();
+        vm.Id = promotion.Id;
+        vm.Name = promotion.Name ?? "";
+        vm.Description = promotion.Description;
+        vm.DiscountValue = promotion.DiscountValue ?? 0;
+        vm.StartDate = promotion.StartDate ?? DateTime.Now;
+        vm.EndDate = promotion.EndDate ?? DateTime.Now.AddDays(30);
+        vm.IsActive = promotion.IsActive ?? true;
+
+        // ดึง ProductId ที่เลือกไว้
+        foreach (var pp in promotion.Promotionproducts)
         {
-            Id = promotion.Id,
-            Name = promotion.Name ?? "",
-            Description = promotion.Description,
-            DiscountType = promotion.DiscountType ?? "percentage",
-            DiscountValue = promotion.DiscountValue ?? 0,
-            MinOrderAmount = promotion.MinOrderAmount,
-            StartDate = promotion.StartDate ?? DateTime.Now,
-            EndDate = promotion.EndDate ?? DateTime.Now.AddDays(30),
-            IsActive = promotion.IsActive ?? true,
-            SelectedProductIds = promotion.Promotionproducts.Select(pp => pp.ProductId ?? 0).Where(id => id > 0).ToList()
-        };
+            if (pp.ProductId != null && pp.ProductId > 0)
+            {
+                vm.SelectedProductIds.Add(pp.ProductId.Value);
+            }
+        }
 
         ViewBag.Products = _db.Products.OrderBy(p => p.Name).ToList();
         return View(vm);
     }
 
+    // บันทึกการแก้ไขโปรโมชั่น
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult EditPromotion(int id, PromotionViewModel vm)
@@ -206,24 +228,27 @@ public class AdminController : Controller
 
         if (promotion == null) return NotFound();
 
+        // จำกัดส่วนลดไม่เกิน 0-100%
+        if (vm.DiscountValue < 0) vm.DiscountValue = 0;
+        if (vm.DiscountValue > 100) vm.DiscountValue = 100;
+
+        // อัพเดทข้อมูล (ลดเป็น % เสมอ)
         promotion.Name = vm.Name;
         promotion.Description = vm.Description;
-        promotion.DiscountType = vm.DiscountType;
+        promotion.DiscountType = "percentage";
         promotion.DiscountValue = vm.DiscountValue;
-        promotion.MinOrderAmount = vm.MinOrderAmount;
         promotion.StartDate = vm.StartDate;
         promotion.EndDate = vm.EndDate;
         promotion.IsActive = vm.IsActive;
 
-        // Update product associations
+        // ลบสินค้าเก่า แล้วเพิ่มใหม่
         _db.Promotionproducts.RemoveRange(promotion.Promotionproducts);
         foreach (var productId in vm.SelectedProductIds)
         {
-            _db.Promotionproducts.Add(new Promotionproduct
-            {
-                PromotionId = promotion.Id,
-                ProductId = productId
-            });
+            var pp = new Promotionproduct();
+            pp.PromotionId = promotion.Id;
+            pp.ProductId = productId;
+            _db.Promotionproducts.Add(pp);
         }
 
         _db.SaveChanges();
@@ -232,9 +257,10 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Promotion Updated";
         TempData["SwalMessage"] = "Promotion has been updated successfully.";
 
-        return RedirectToAction(nameof(Promotions));
+        return RedirectToAction("Promotions");
     }
 
+    // ลบโปรโมชั่น
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult DeletePromotion(int id)
@@ -253,59 +279,49 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Promotion Deleted";
         TempData["SwalMessage"] = "Promotion has been deleted.";
 
-        return RedirectToAction(nameof(Promotions));
+        return RedirectToAction("Promotions");
     }
 
+    // ===== จัดการผู้ใช้ =====
+
+    // แสดงรายการผู้ใช้ทั้งหมด
     [HttpGet]
     public IActionResult Users()
     {
         var users = _db.Users
-            .OrderByDescending(u => u.CreatedAt)
+            .OrderBy(u => u.Id)
             .ToList();
         return View(users);
     }
 
+    // หน้าแก้ไขข้อมูลผู้ใช้
     [HttpGet]
     public IActionResult EditUser(int id)
     {
         var user = _db.Users.Find(id);
-        if (user == null)
-        {
-            return NotFound();
-        }
+        if (user == null) return NotFound();
 
-        var vm = new AdminUserEditViewModel
-        {
-            Id = user.Id,
-            Email = user.Email ?? "",
-            Name = user.Name ?? "",
-            Lastname = user.Lastname ?? "",
-            PhoneNumber = user.PhoneNumber,
-            Role = user.Role ?? "User"
-        };
+        var vm = new AdminUserEditViewModel();
+        vm.Id = user.Id;
+        vm.Email = user.Email ?? "";
+        vm.Name = user.Name ?? "";
+        vm.Lastname = user.Lastname ?? "";
+        vm.PhoneNumber = user.PhoneNumber;
+        vm.Role = user.Role ?? "User";
 
         return View(vm);
     }
 
+    // บันทึกการแก้ไขข้อมูลผู้ใช้
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult EditUser(int id, AdminUserEditViewModel vm)
     {
-        if (id != vm.Id)
-        {
-            return BadRequest();
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return View(vm);
-        }
+        if (id != vm.Id) return BadRequest();
+        if (!ModelState.IsValid) return View(vm);
 
         var user = _db.Users.Find(id);
-        if (user == null)
-        {
-            return NotFound();
-        }
+        if (user == null) return NotFound();
 
         user.Name = vm.Name;
         user.Lastname = vm.Lastname;
@@ -318,53 +334,49 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Updated";
         TempData["SwalMessage"] = "User information has been updated.";
 
-        return RedirectToAction(nameof(Users));
+        return RedirectToAction("Users");
     }
 
+    // ===== จัดการสินค้า =====
+
+    // แสดงรายการสินค้าทั้งหมด
     [HttpGet]
     public IActionResult Products()
     {
         var products = _db.Products
             .Include(p => p.Category)
-            .OrderByDescending(p => p.CreatedAt)
+            .OrderBy(p => p.Id)
             .ToList();
         return View(products);
     }
 
+    // หน้าสร้างสินค้าใหม่
     [HttpGet]
     public IActionResult CreateProduct()
     {
-        var categories = _db.Categories
-            .OrderBy(c => c.Name)
-            .ToList();
-        
-        ViewBag.Categories = categories;
+        ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
         return View();
     }
 
+    // บันทึกสินค้าใหม่
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult CreateProduct(ProductCreateViewModel vm)
     {
         if (!ModelState.IsValid)
         {
-            var categories = _db.Categories
-                .OrderBy(c => c.Name)
-                .ToList();
-            ViewBag.Categories = categories;
+            ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
             return View(vm);
         }
 
-        var product = new Product
-        {
-            Name = vm.Name,
-            Description = vm.Description,
-            Price = vm.Price,
-            CategoryId = vm.CategoryId,
-            ImageUrl = vm.ImageUrl,
-            Stock = vm.Stock,
-            CreatedAt = DateTime.Now
-        };
+        var product = new Product();
+        product.Name = vm.Name;
+        product.Description = vm.Description;
+        product.Price = vm.Price;
+        product.CategoryId = vm.CategoryId;
+        product.ImageUrl = vm.ImageUrl;
+        product.Stock = vm.Stock;
+        product.CreatedAt = DateTime.Now;
 
         _db.Products.Add(product);
         _db.SaveChanges();
@@ -373,60 +385,44 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Product Created";
         TempData["SwalMessage"] = "Product has been created successfully.";
 
-        return RedirectToAction(nameof(Products));
+        return RedirectToAction("Products");
     }
 
+    // หน้าแก้ไขสินค้า
     [HttpGet]
     public IActionResult EditProduct(int id)
     {
         var product = _db.Products.Find(id);
-        if (product == null)
-        {
-            return NotFound();
-        }
+        if (product == null) return NotFound();
 
-        var vm = new ProductCreateViewModel
-        {
-            Id = product.Id,
-            Name = product.Name ?? "",
-            Description = product.Description,
-            Price = product.Price ?? 0,
-            CategoryId = product.CategoryId ?? 0,
-            ImageUrl = product.ImageUrl,
-            Stock = product.Stock
-        };
+        var vm = new ProductCreateViewModel();
+        vm.Id = product.Id;
+        vm.Name = product.Name ?? "";
+        vm.Description = product.Description;
+        vm.Price = product.Price ?? 0;
+        vm.CategoryId = product.CategoryId ?? 0;
+        vm.ImageUrl = product.ImageUrl;
+        vm.Stock = product.Stock;
 
-        var categories = _db.Categories
-            .OrderBy(c => c.Name)
-            .ToList();
-        ViewBag.Categories = categories;
-
+        ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
         return View(vm);
     }
 
+    // บันทึกการแก้ไขสินค้า
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult EditProduct(int id, ProductCreateViewModel vm)
     {
-        if (id != vm.Id)
-        {
-            return BadRequest();
-        }
+        if (id != vm.Id) return BadRequest();
 
         if (!ModelState.IsValid)
         {
-            var categories = _db.Categories
-                .OrderBy(c => c.Name)
-                .ToList();
-            ViewBag.Categories = categories;
+            ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
             return View(vm);
         }
 
         var product = _db.Products.Find(id);
-        if (product == null)
-        {
-            return NotFound();
-        }
+        if (product == null) return NotFound();
 
         product.Name = vm.Name;
         product.Description = vm.Description;
@@ -441,18 +437,16 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Product Updated";
         TempData["SwalMessage"] = "Product has been updated successfully.";
 
-        return RedirectToAction(nameof(Products));
+        return RedirectToAction("Products");
     }
 
+    // ลบสินค้า
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult DeleteProduct(int id)
     {
         var product = _db.Products.Find(id);
-        if (product == null)
-        {
-            return NotFound();
-        }
+        if (product == null) return NotFound();
 
         _db.Products.Remove(product);
         _db.SaveChanges();
@@ -461,6 +455,6 @@ public class AdminController : Controller
         TempData["SwalTitle"] = "Product Deleted";
         TempData["SwalMessage"] = "Product has been deleted successfully.";
 
-        return RedirectToAction(nameof(Products));
+        return RedirectToAction("Products");
     }
 }
