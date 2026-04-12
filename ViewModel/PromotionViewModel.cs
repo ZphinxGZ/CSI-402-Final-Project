@@ -9,5 +9,7 @@ public class PromotionViewModel
     public DateTime StartDate { get; set; } = DateTime.Now;
     public DateTime EndDate { get; set; } = DateTime.Now.AddDays(30);
     public bool IsActive { get; set; } = true;
+    // true = ลดทุกสินค้าตามช่วงเวลา, false = เลือกสินค้าเฉพาะ
+    public bool IsGlobal { get; set; } = false;
     public List<int> SelectedProductIds { get; set; } = new List<int>();
 }

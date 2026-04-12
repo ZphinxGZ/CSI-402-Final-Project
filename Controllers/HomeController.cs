@@ -38,7 +38,7 @@ public class HomeController : Controller
             .Take(12)
             .ToList();
 
-        // คำนวณราคาหลังส่วนลด
+        // คำนวณราคาหลังส่วนลด (เฉพาะโปรสินค้าเท่านั้น ไม่รวมโปรเทศกาล/ลูกค้าใหม่)
         var discountMap = new Dictionary<int, decimal>();
 
         foreach (var p in products)
@@ -46,23 +46,22 @@ public class HomeController : Controller
             decimal originalPrice = p.Price ?? 0;
             decimal finalPrice = originalPrice;
 
-            // วนหาโปรโมชั่นที่ Active
+            // หาเฉพาะโปรโมชั่นที่ผูกกับสินค้านี้โดยตรง
             if (p.Promotionproducts != null)
             {
                 foreach (var pp in p.Promotionproducts)
                 {
                     if (pp.Promotion != null
                         && pp.Promotion.IsActive == true
+                        && pp.Promotion.DiscountType == "percentage"
                         && pp.Promotion.StartDate <= now
                         && pp.Promotion.EndDate >= now)
                     {
-                        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
-                        if (pp.Promotion.DiscountValue != null && pp.Promotion.DiscountValue > 0)
+                        decimal pct = pp.Promotion.DiscountValue ?? 0;
+                        if (pct > 100) pct = 100;
+                        if (pct > 0)
                         {
-                            decimal discountPercent = pp.Promotion.DiscountValue.Value;
-                            if (discountPercent > 100) discountPercent = 100;
-                            decimal discountAmount = originalPrice * discountPercent / 100;
-                            finalPrice = Math.Round(originalPrice - discountAmount, 2);
+                            finalPrice = Math.Round(originalPrice - (originalPrice * pct / 100), 2);
                             if (finalPrice < 0) finalPrice = 0;
                         }
                         break;

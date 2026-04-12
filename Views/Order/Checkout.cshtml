@@ -16,7 +16,7 @@
                     <div class="card-body p-0">
                         @foreach (var item in Model.Items)
                         {
-                            <div class="d-flex align-items-center p-3 border-bottom">
+                            <div class="d-flex align-items-start p-3 border-bottom">
                                 <div class="me-3">
                                     @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                                     {
@@ -30,15 +30,31 @@
                                     }
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-0">@item.ProductName</h6>
+                                    <h6 class="mb-1">@item.ProductName</h6>
                                     <small class="text-muted">x @item.Quantity</small>
+                                    @if (item.HasDiscount)
+                                    {
+                                        <div class="mt-1">
+                                            @if (item.ProductPromoPercent > 0)
+                                            {
+                                                <div><small class="text-success"><i class="bi bi-tag-fill me-1"></i>@item.ProductPromoName (-@item.ProductPromoPercent%)</small></div>
+                                            }
+                                            @if (item.GlobalPromoPercent > 0)
+                                            {
+                                                <div><small class="text-info"><i class="bi bi-globe me-1"></i>@item.GlobalPromoName (-@item.GlobalPromoPercent%)</small></div>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                                 <div class="text-end">
                                     @if (item.HasDiscount)
                                     {
                                         <small class="text-muted text-decoration-line-through">@item.OriginalPrice.ToString("N2") ฿</small>
+                                        @if (item.ProductPromoPercent > 0 && item.GlobalPromoPercent > 0)
+                                        {
+                                            <div><small class="text-muted">→ @item.PriceAfterProductPromo.ToString("N2") ฿</small></div>
+                                        }
                                         <div class="fw-bold" style="color: var(--accent);">@item.FinalPrice.ToString("N2") ฿</div>
-                                        <small class="text-success"><i class="bi bi-tag-fill me-1"></i>@item.PromotionName (-@item.DiscountPercent%)</small>
                                     }
                                     else
                                     {
@@ -90,11 +106,18 @@
                             <span>Subtotal:</span>
                             <span>@Model.SubTotal.ToString("N2") ฿</span>
                         </div>
-                        @if (Model.Discount > 0)
+                        @if (Model.ProductPromoDiscount > 0)
                         {
                             <div class="d-flex justify-content-between mb-2 text-success">
-                                <span><i class="bi bi-tag me-1"></i>Promotion Discount:</span>
-                                <span>-@Model.Discount.ToString("N2") ฿</span>
+                                <span><i class="bi bi-tag me-1"></i>Product Promotions:</span>
+                                <span>-@Model.ProductPromoDiscount.ToString("N2") ฿</span>
+                            </div>
+                        }
+                        @if (Model.GlobalPromoDiscount > 0)
+                        {
+                            <div class="d-flex justify-content-between mb-2 text-info">
+                                <span><i class="bi bi-globe me-1"></i>@(Model.GlobalPromoName ?? "Festival"):</span>
+                                <span>-@Model.GlobalPromoDiscount.ToString("N2") ฿</span>
                             </div>
                         }
                         @if (Model.IsNewCustomer && Model.NewCustomerDiscount > 0)

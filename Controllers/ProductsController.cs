@@ -89,44 +89,34 @@ public class ProductsController : Controller
         return View(product);
     }
 
-    // คำนวณราคาหลังส่วนลด
+    // คำนวณราคาหลังส่วนลด (เฉพาะโปรสินค้าเท่านั้น ไม่รวมโปรเทศกาล/ลูกค้าใหม่)
     private decimal GetDiscountedPrice(Product product)
     {
         decimal originalPrice = product.Price ?? 0;
         var now = DateTime.Now;
 
-        // วนหาโปรโมชั่นที่ Active อยู่
-        Promotion activePromo = null;
+        // หาเฉพาะโปรโมชั่นที่ผูกกับสินค้านี้โดยตรง
         if (product.Promotionproducts != null)
         {
             foreach (var pp in product.Promotionproducts)
             {
                 if (pp.Promotion != null
                     && pp.Promotion.IsActive == true
+                    && pp.Promotion.DiscountType == "percentage"
                     && pp.Promotion.StartDate <= now
                     && pp.Promotion.EndDate >= now)
                 {
-                    activePromo = pp.Promotion;
+                    decimal pct = pp.Promotion.DiscountValue ?? 0;
+                    if (pct > 100) pct = 100;
+                    if (pct > 0)
+                    {
+                        decimal result = Math.Round(originalPrice - (originalPrice * pct / 100), 2);
+                        if (result < 0) result = 0;
+                        return result;
+                    }
                     break;
                 }
             }
-        }
-
-        // ถ้าไม่มีโปรโมชั่น ใช้ราคาเดิม
-        if (activePromo == null)
-        {
-            return originalPrice;
-        }
-
-        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
-        if (activePromo.DiscountValue != null && activePromo.DiscountValue > 0)
-        {
-            decimal discountPercent = activePromo.DiscountValue.Value;
-            if (discountPercent > 100) discountPercent = 100;
-            decimal discountAmount = originalPrice * discountPercent / 100;
-            decimal result = Math.Round(originalPrice - discountAmount, 2);
-            if (result < 0) result = 0;
-            return result;
         }
 
         return originalPrice;

@@ -8,11 +8,15 @@ public class CheckoutViewModel
     public List<Shippingaddress> Addresses { get; set; } = new List<Shippingaddress>();
     public int? SelectedAddressId { get; set; }
     public decimal SubTotal { get; set; }
-    public decimal Discount { get; set; }
-    public decimal Total { get; set; }
+    // ส่วนลดรวมจากโปรสินค้าเฉพาะ
+    public decimal ProductPromoDiscount { get; set; }
+    // ส่วนลดรวมจากโปรเทศกาล (Global)
+    public decimal GlobalPromoDiscount { get; set; }
+    public string? GlobalPromoName { get; set; }
     // โปรโมชั่นลูกค้าใหม่
     public bool IsNewCustomer { get; set; }
     public decimal NewCustomerDiscount { get; set; }
+    public decimal Total { get; set; }
 }
 
 public class CheckoutItemViewModel
@@ -25,7 +29,13 @@ public class CheckoutItemViewModel
     public decimal FinalPrice { get; set; }
     public decimal TotalPrice { get; set; }
     public bool HasDiscount { get; set; }
-    // ชื่อโปรโมชั่นที่ใช้
-    public string? PromotionName { get; set; }
-    public decimal DiscountPercent { get; set; }
+    // ขั้นตอนที่ 2: โปรเฉพาะสินค้า
+    public string? ProductPromoName { get; set; }
+    public decimal ProductPromoPercent { get; set; }
+    public decimal PriceAfterProductPromo { get; set; }
+    // ขั้นตอนที่ 3: โปรเทศกาล (Global)
+    public string? GlobalPromoName { get; set; }
+    public decimal GlobalPromoPercent { get; set; }
+    public decimal PriceAfterGlobalPromo { get; set; }
+    // ขั้นตอนที่ 4: ลูกค้าใหม่ (คำนวณในระดับ Order Summary)
 }

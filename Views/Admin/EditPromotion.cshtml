@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Edit Promotion";
     var products = ViewBag.Products as List<Product> ?? new List<Product>();
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -50,15 +51,35 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
-                            <label asp-for="IsActive" class="form-check-label">Active</label>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input asp-for="IsGlobal" class="form-check-input" type="checkbox" id="isGlobalCheck" />
+                                <label asp-for="IsGlobal" class="form-check-label">
+                                    <i class="bi bi-globe me-1"></i>Apply to All Products (Time-based)
+                                </label>
+                            </div>
+                            <small class="text-muted">Enable for festival/campaign promotions that apply to all products.</small>
                         </div>
                     </div>
 
-                    <div class="mb-4">
+                    <div id="productSelectionSection" class="mb-4">
                         <label class="form-label fw-bold">Apply to Products</label>
+                        <div class="mb-2">
+                            <select id="categoryFilter" class="form-select form-select-sm" style="max-width: 300px;">
+                                <option value="">-- All Categories --</option>
+                                @foreach (var cat in categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
                         <div class="border rounded p-3" style="max-height: 250px; overflow-y: auto; background: var(--bg-1);">
                             @if (!products.Any())
                             {
@@ -66,13 +87,19 @@
                             }
                             @foreach (var product in products)
                             {
-                                <div class="form-check mb-1">
+                                <div class="form-check mb-1 product-item" data-category="@product.CategoryId">
                                     <input class="form-check-input" type="checkbox" name="SelectedProductIds"
                                            value="@product.Id" id="product_@product.Id"
                                            @(Model.SelectedProductIds.Contains(product.Id) ? "checked" : "") />
                                     <label class="form-check-label" for="product_@product.Id">
                                         @product.Name
-                                        <small class="text-muted">(@product.Price?.ToString("N2") ฿)</small>
+                                        <small class="text-muted">
+                                            (@product.Price?.ToString("N2") ฿)
+                                            @if (product.Category != null)
+                                            {
+                                                <span>- @product.Category.Name</span>
+                                            }
+                                        </small>
                                     </label>
                                 </div>
                             }
@@ -93,4 +120,31 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        var isGlobalCheck = document.getElementById('isGlobalCheck');
+        var productSection = document.getElementById('productSelectionSection');
+
+        function toggleProductSection() {
+            if (isGlobalCheck.checked) {
+                productSection.style.display = 'none';
+            } else {
+                productSection.style.display = 'block';
+            }
+        }
+
+        isGlobalCheck.addEventListener('change', toggleProductSection);
+        toggleProductSection();
+
+        document.getElementById('categoryFilter').addEventListener('change', function() {
+            var catId = this.value;
+            var items = document.querySelectorAll('.product-item');
+            for (var i = 0; i < items.length; i++) {
+                if (catId === '' || items[i].getAttribute('data-category') === catId) {
+                    items[i].style.display = 'block';
+                } else {
+                    items[i].style.display = 'none';
+                }
+            }
+        });
+    </script>
 }

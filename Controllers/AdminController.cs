@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CSI_402_Final_Project.Models;
 using CSI_402_Final_Project.ViewModel;
+using CSI_402_Final_Project.Security;
 
 namespace CSI_402_Final_Project.Controllers;
 
@@ -128,7 +129,8 @@ public class AdminController : Controller
     [HttpGet]
     public IActionResult CreatePromotion()
     {
-        ViewBag.Products = _db.Products.OrderBy(p => p.Name).ToList();
+        ViewBag.Products = _db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToList();
+        ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
         return View(new PromotionViewModel());
     }
 
@@ -139,7 +141,8 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
-            ViewBag.Products = _db.Products.OrderBy(p => p.Name).ToList();
+            ViewBag.Products = _db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToList();
+            ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
             return View(vm);
         }
 
@@ -147,11 +150,11 @@ public class AdminController : Controller
         if (vm.DiscountValue < 0) vm.DiscountValue = 0;
         if (vm.DiscountValue > 100) vm.DiscountValue = 100;
 
-        // สร้าง Promotion (ลดเป็น % เสมอ)
+        // สร้าง Promotion
         var promotion = new Promotion();
         promotion.Name = vm.Name;
         promotion.Description = vm.Description;
-        promotion.DiscountType = "percentage";
+        promotion.DiscountType = vm.IsGlobal ? "global" : "percentage";
         promotion.DiscountValue = vm.DiscountValue;
         promotion.StartDate = vm.StartDate;
         promotion.EndDate = vm.EndDate;
@@ -160,15 +163,18 @@ public class AdminController : Controller
         _db.Promotions.Add(promotion);
         _db.SaveChanges();
 
-        // เพิ่มสินค้าที่เลือก
-        foreach (var productId in vm.SelectedProductIds)
+        // ถ้าไม่ใช่ Global ให้เพิ่มสินค้าที่เลือก
+        if (!vm.IsGlobal)
         {
-            var pp = new Promotionproduct();
-            pp.PromotionId = promotion.Id;
-            pp.ProductId = productId;
-            _db.Promotionproducts.Add(pp);
+            foreach (var productId in vm.SelectedProductIds)
+            {
+                var pp = new Promotionproduct();
+                pp.PromotionId = promotion.Id;
+                pp.ProductId = productId;
+                _db.Promotionproducts.Add(pp);
+            }
+            _db.SaveChanges();
         }
-        _db.SaveChanges();
 
         TempData["SwalIcon"] = "success";
         TempData["SwalTitle"] = "Promotion Created";
@@ -195,6 +201,7 @@ public class AdminController : Controller
         vm.StartDate = promotion.StartDate ?? DateTime.Now;
         vm.EndDate = promotion.EndDate ?? DateTime.Now.AddDays(30);
         vm.IsActive = promotion.IsActive ?? true;
+        vm.IsGlobal = promotion.DiscountType == "global";
 
         // ดึง ProductId ที่เลือกไว้
         foreach (var pp in promotion.Promotionproducts)
@@ -205,7 +212,8 @@ public class AdminController : Controller
             }
         }
 
-        ViewBag.Products = _db.Products.OrderBy(p => p.Name).ToList();
+        ViewBag.Products = _db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToList();
+        ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
         return View(vm);
     }
 
@@ -218,7 +226,8 @@ public class AdminController : Controller
 
         if (!ModelState.IsValid)
         {
-            ViewBag.Products = _db.Products.OrderBy(p => p.Name).ToList();
+            ViewBag.Products = _db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToList();
+            ViewBag.Categories = _db.Categories.OrderBy(c => c.Name).ToList();
             return View(vm);
         }
 
@@ -232,10 +241,10 @@ public class AdminController : Controller
         if (vm.DiscountValue < 0) vm.DiscountValue = 0;
         if (vm.DiscountValue > 100) vm.DiscountValue = 100;
 
-        // อัพเดทข้อมูล (ลดเป็น % เสมอ)
+        // อัพเดทข้อมูล
         promotion.Name = vm.Name;
         promotion.Description = vm.Description;
-        promotion.DiscountType = "percentage";
+        promotion.DiscountType = vm.IsGlobal ? "global" : "percentage";
         promotion.DiscountValue = vm.DiscountValue;
         promotion.StartDate = vm.StartDate;
         promotion.EndDate = vm.EndDate;
@@ -243,12 +252,15 @@ public class AdminController : Controller
 
         // ลบสินค้าเก่า แล้วเพิ่มใหม่
         _db.Promotionproducts.RemoveRange(promotion.Promotionproducts);
-        foreach (var productId in vm.SelectedProductIds)
+        if (!vm.IsGlobal)
         {
-            var pp = new Promotionproduct();
-            pp.PromotionId = promotion.Id;
-            pp.ProductId = productId;
-            _db.Promotionproducts.Add(pp);
+            foreach (var productId in vm.SelectedProductIds)
+            {
+                var pp = new Promotionproduct();
+                pp.PromotionId = promotion.Id;
+                pp.ProductId = productId;
+                _db.Promotionproducts.Add(pp);
+            }
         }
 
         _db.SaveChanges();
@@ -456,5 +468,73 @@ public class AdminController : Controller
         TempData["SwalMessage"] = "Product has been deleted successfully.";
 
         return RedirectToAction("Products");
+    }
+
+    // ===== จัดการหมวดหมู่ =====
+
+    // สร้างหมวดหมู่ใหม่ (AJAX)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult CreateCategory(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return Json(new { success = false, message = "Category name is required." });
+        }
+
+        // เช็คซ้ำ
+        bool exists = _db.Categories.Any(c => c.Name == name);
+        if (exists)
+        {
+            return Json(new { success = false, message = "Category already exists." });
+        }
+
+        var category = new Category();
+        category.Name = name;
+        _db.Categories.Add(category);
+        _db.SaveChanges();
+
+        return Json(new { success = true, id = category.Id, name = category.Name });
+    }
+
+    // ===== เพิ่มผู้ใช้ใหม่ =====
+
+    [HttpGet]
+    public IActionResult CreateUser()
+    {
+        return View(new AdminCreateUserViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult CreateUser(AdminCreateUserViewModel vm)
+    {
+        if (!ModelState.IsValid) return View(vm);
+
+        // เช็ค email ซ้ำ
+        bool emailExists = _db.Users.Any(u => u.Email == vm.Email);
+        if (emailExists)
+        {
+            ModelState.AddModelError("Email", "Email is already registered.");
+            return View(vm);
+        }
+
+        var user = new User();
+        user.Name = vm.Name;
+        user.Lastname = vm.Lastname;
+        user.Email = vm.Email;
+        user.Password = PasswordHasher.Hash(vm.Password);
+        user.PhoneNumber = vm.PhoneNumber;
+        user.Role = vm.Role;
+        user.CreatedAt = DateTime.UtcNow;
+
+        _db.Users.Add(user);
+        _db.SaveChanges();
+
+        TempData["SwalIcon"] = "success";
+        TempData["SwalTitle"] = "User Created";
+        TempData["SwalMessage"] = "User has been created successfully.";
+
+        return RedirectToAction("Users");
     }
 }

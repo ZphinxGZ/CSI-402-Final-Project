@@ -32,6 +32,7 @@ else
                     <tr>
                         <th>#</th>
                         <th>Name</th>
+                        <th>Type</th>
                         <th>Discount</th>
                         <th>Period</th>
                         <th>Products</th>
@@ -49,6 +50,16 @@ else
                                 @if (!string.IsNullOrWhiteSpace(promo.Description))
                                 {
                                     <small class="text-muted">@promo.Description</small>
+                                }
+                            </td>
+                            <td>
+                                @if (promo.DiscountType == "global")
+                                {
+                                    <span class="badge bg-info"><i class="bi bi-globe me-1"></i>All Products</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"><i class="bi bi-box me-1"></i>Specific</span>
                                 }
                             </td>
                             <td>

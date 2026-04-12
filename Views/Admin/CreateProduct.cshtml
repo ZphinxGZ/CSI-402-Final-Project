@@ -37,17 +37,22 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="CategoryId" class="form-label"></label>
-                        <select asp-for="CategoryId" class="form-control">
-                            <option value="">Select Category</option>
-                            @if (ViewBag.Categories != null)
-                            {
-                                @foreach (var category in ViewBag.Categories)
+                        <label asp-for="CategoryId" class="form-label">Category</label>
+                        <div class="d-flex gap-2">
+                            <select asp-for="CategoryId" class="form-control" id="categorySelect">
+                                <option value="">Select Category</option>
+                                @if (ViewBag.Categories != null)
                                 {
-                                    <option value="@category.Id">@category.Name</option>
+                                    @foreach (var category in ViewBag.Categories)
+                                    {
+                                        <option value="@category.Id">@category.Name</option>
+                                    }
                                 }
-                            }
-                        </select>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary flex-shrink-0" onclick="showNewCategoryModal()">
+                                <i class="bi bi-plus-circle me-1"></i>New
+                            </button>
+                        </div>
                         <span asp-validation-for="CategoryId" class="text-danger"></span>
                     </div>
 
@@ -100,5 +105,45 @@
                 </div>`;
             }
         });
+
+        function showNewCategoryModal() {
+            Swal.fire({
+                title: 'Create New Category',
+                input: 'text',
+                inputLabel: 'Category Name',
+                inputPlaceholder: 'e.g. Accessories',
+                showCancelButton: true,
+                confirmButtonColor: '#7c3aed',
+                confirmButtonText: 'Create',
+                background: '#ffffff',
+                color: '#2d2a3e',
+                inputValidator: function(value) {
+                    if (!value) return 'Please enter a category name.';
+                }
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    fetch('/Admin/CreateCategory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'name=' + encodeURIComponent(result.value) + '&__RequestVerificationToken=' + encodeURIComponent(token)
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            var select = document.getElementById('categorySelect');
+                            var option = document.createElement('option');
+                            option.value = data.id;
+                            option.text = data.name;
+                            select.appendChild(option);
+                            select.value = data.id;
+                            Swal.fire({ icon: 'success', title: 'Created!', text: 'Category "' + data.name + '" has been created.', confirmButtonColor: '#7c3aed', background: '#ffffff', color: '#2d2a3e' });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#7c3aed', background: '#ffffff', color: '#2d2a3e' });
+                        }
+                    });
+                }
+            });
+        }
     </script>
 }

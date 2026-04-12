@@ -46,23 +46,78 @@ public class OrderController : Controller
         // เช็คว่าเป็นลูกค้าใหม่หรือไม่ (ยังไม่เคยสั่งซื้อ)
         bool isNewCustomer = !_db.Orders.Any(o => o.UserId == userId);
 
+        // หาโปรโมชั่น Global ที่ Active อยู่
+        var now = DateTime.Now;
+        var globalPromo = _db.Promotions
+            .FirstOrDefault(p =>
+                p.IsActive == true &&
+                p.DiscountType == "global" &&
+                p.StartDate <= now &&
+                p.EndDate >= now);
+
         // สร้าง ViewModel
         var viewModel = new CheckoutViewModel();
         viewModel.Addresses = addresses;
         viewModel.IsNewCustomer = isNewCustomer;
+        if (globalPromo != null)
+        {
+            viewModel.GlobalPromoName = globalPromo.Name ?? "Festival Promotion";
+        }
+
         decimal subTotal = 0;
-        decimal promoDiscount = 0;
+        decimal totalProductPromoDiscount = 0;
+        decimal totalGlobalPromoDiscount = 0;
 
         foreach (var ci in cart.Cartitems)
         {
             if (ci.Product == null) continue;
 
             decimal originalPrice = ci.Product.Price ?? 0;
-            // ดึงราคาหลังลด + ชื่อโปรโมชั่น
-            string promoName = "";
-            decimal discountPercent = 0;
-            decimal finalPrice = GetDiscountedPriceWithInfo(ci.Product.Id, originalPrice, out promoName, out discountPercent);
             int qty = ci.Quantity ?? 0;
+
+            // ขั้นตอน 1: ราคาตั้งต้น
+            decimal price = originalPrice;
+
+            // ขั้นตอน 2: ลดจากโปรเฉพาะสินค้า (ถ้ามี)
+            string productPromoName = "";
+            decimal productPromoPct = 0;
+            var promoProduct = _db.Promotionproducts
+                .Include(pp => pp.Promotion)
+                .FirstOrDefault(pp =>
+                    pp.ProductId == ci.Product.Id &&
+                    pp.Promotion != null &&
+                    pp.Promotion.IsActive == true &&
+                    pp.Promotion.DiscountType == "percentage" &&
+                    pp.Promotion.StartDate <= now &&
+                    pp.Promotion.EndDate >= now);
+
+            decimal priceAfterProductPromo = price;
+            if (promoProduct != null && promoProduct.Promotion != null)
+            {
+                productPromoPct = promoProduct.Promotion.DiscountValue ?? 0;
+                if (productPromoPct > 100) productPromoPct = 100;
+                if (productPromoPct > 0)
+                {
+                    productPromoName = promoProduct.Promotion.Name ?? "Promotion";
+                    priceAfterProductPromo = Math.Round(price - (price * productPromoPct / 100), 2);
+                    if (priceAfterProductPromo < 0) priceAfterProductPromo = 0;
+                }
+            }
+
+            // ขั้นตอน 3: ลดจากโปรเทศกาล Global (ถ้ามี) - ลดจากราคาหลังขั้นตอน 2
+            decimal globalPromoPct = 0;
+            string globalPromoName = "";
+            decimal priceAfterGlobalPromo = priceAfterProductPromo;
+            if (globalPromo != null && globalPromo.DiscountValue != null && globalPromo.DiscountValue > 0)
+            {
+                globalPromoPct = globalPromo.DiscountValue.Value;
+                if (globalPromoPct > 100) globalPromoPct = 100;
+                globalPromoName = globalPromo.Name ?? "Festival Promotion";
+                priceAfterGlobalPromo = Math.Round(priceAfterProductPromo - (priceAfterProductPromo * globalPromoPct / 100), 2);
+                if (priceAfterGlobalPromo < 0) priceAfterGlobalPromo = 0;
+            }
+
+            decimal finalPrice = priceAfterGlobalPromo;
 
             var item = new CheckoutItemViewModel();
             item.ProductId = ci.Product.Id;
@@ -73,27 +128,35 @@ public class OrderController : Controller
             item.FinalPrice = finalPrice;
             item.TotalPrice = finalPrice * qty;
             item.HasDiscount = finalPrice < originalPrice;
-            item.PromotionName = promoName;
-            item.DiscountPercent = discountPercent;
+            // โปรเฉพาะสินค้า
+            item.ProductPromoName = productPromoName;
+            item.ProductPromoPercent = productPromoPct;
+            item.PriceAfterProductPromo = priceAfterProductPromo;
+            // โปรเทศกาล
+            item.GlobalPromoName = globalPromoName;
+            item.GlobalPromoPercent = globalPromoPct;
+            item.PriceAfterGlobalPromo = priceAfterGlobalPromo;
 
             viewModel.Items.Add(item);
 
             subTotal += originalPrice * qty;
-            promoDiscount += (originalPrice - finalPrice) * qty;
+            totalProductPromoDiscount += (originalPrice - priceAfterProductPromo) * qty;
+            totalGlobalPromoDiscount += (priceAfterProductPromo - priceAfterGlobalPromo) * qty;
         }
 
         viewModel.SubTotal = subTotal;
-        viewModel.Discount = promoDiscount;
+        viewModel.ProductPromoDiscount = totalProductPromoDiscount;
+        viewModel.GlobalPromoDiscount = totalGlobalPromoDiscount;
 
-        // ถ้าเป็นลูกค้าใหม่ ลดเพิ่ม 5% จากยอดหลังหักโปร
-        decimal afterPromo = subTotal - promoDiscount;
+        // ขั้นตอน 4: ลูกค้าใหม่ ลดเพิ่ม 5% จากยอดหลังหักโปรทั้งหมด
+        decimal afterAllPromo = subTotal - totalProductPromoDiscount - totalGlobalPromoDiscount;
         decimal newCustDiscount = 0;
         if (isNewCustomer)
         {
-            newCustDiscount = Math.Round(afterPromo * 5m / 100m, 2);
+            newCustDiscount = Math.Round(afterAllPromo * 5m / 100m, 2);
         }
         viewModel.NewCustomerDiscount = newCustDiscount;
-        viewModel.Total = afterPromo - newCustDiscount;
+        viewModel.Total = afterAllPromo - newCustDiscount;
 
         return View(viewModel);
     }
@@ -119,8 +182,17 @@ public class OrderController : Controller
             return RedirectToAction("Index", "Cart");
         }
 
-        // เช็คว่าเป็นลูกค้าใหม่หรือไม่ (ยังไม่เคยสั่งซื้อ)
+        // เช็คว่าเป็นลูกค้าใหม่หรือไม่
         bool isNewCustomer = !_db.Orders.Any(o => o.UserId == userId);
+
+        // หาโปรโมชั่น Global ที่ Active
+        var now = DateTime.Now;
+        var globalPromo = _db.Promotions
+            .FirstOrDefault(p =>
+                p.IsActive == true &&
+                p.DiscountType == "global" &&
+                p.StartDate <= now &&
+                p.EndDate >= now);
 
         // สร้าง Order ใหม่
         var order = new Order();
@@ -130,8 +202,9 @@ public class OrderController : Controller
         _db.Orders.Add(order);
         _db.SaveChanges();
 
-        decimal totalPrice = 0;
-        decimal promoDiscount = 0;
+        decimal subTotal = 0;
+        decimal totalProductPromoDiscount = 0;
+        decimal totalGlobalPromoDiscount = 0;
 
         // วนลูปสินค้าในตะกร้า สร้าง OrderItem
         foreach (var ci in cart.Cartitems)
@@ -139,12 +212,47 @@ public class OrderController : Controller
             if (ci.Product == null) continue;
 
             decimal originalPrice = ci.Product.Price ?? 0;
-            string promoName = "";
-            decimal discountPct = 0;
-            decimal finalPrice = GetDiscountedPriceWithInfo(ci.Product.Id, originalPrice, out promoName, out discountPct);
             int qty = ci.Quantity ?? 0;
 
-            // สร้าง OrderItem
+            // ขั้นตอน 1: ราคาตั้งต้น
+            decimal price = originalPrice;
+
+            // ขั้นตอน 2: ลดจากโปรเฉพาะสินค้า
+            var promoProduct = _db.Promotionproducts
+                .Include(pp => pp.Promotion)
+                .FirstOrDefault(pp =>
+                    pp.ProductId == ci.Product.Id &&
+                    pp.Promotion != null &&
+                    pp.Promotion.IsActive == true &&
+                    pp.Promotion.DiscountType == "percentage" &&
+                    pp.Promotion.StartDate <= now &&
+                    pp.Promotion.EndDate >= now);
+
+            decimal priceAfterProductPromo = price;
+            if (promoProduct != null && promoProduct.Promotion != null)
+            {
+                decimal pct = promoProduct.Promotion.DiscountValue ?? 0;
+                if (pct > 100) pct = 100;
+                if (pct > 0)
+                {
+                    priceAfterProductPromo = Math.Round(price - (price * pct / 100), 2);
+                    if (priceAfterProductPromo < 0) priceAfterProductPromo = 0;
+                }
+            }
+
+            // ขั้นตอน 3: ลดจากโปรเทศกาล Global
+            decimal priceAfterGlobalPromo = priceAfterProductPromo;
+            if (globalPromo != null && globalPromo.DiscountValue != null && globalPromo.DiscountValue > 0)
+            {
+                decimal gPct = globalPromo.DiscountValue.Value;
+                if (gPct > 100) gPct = 100;
+                priceAfterGlobalPromo = Math.Round(priceAfterProductPromo - (priceAfterProductPromo * gPct / 100), 2);
+                if (priceAfterGlobalPromo < 0) priceAfterGlobalPromo = 0;
+            }
+
+            decimal finalPrice = priceAfterGlobalPromo;
+
+            // สร้าง OrderItem (เก็บราคาหลังลดโปรสินค้า + เทศกาล)
             var orderItem = new Orderitem();
             orderItem.OrderId = order.Id;
             orderItem.ProductId = ci.Product.Id;
@@ -152,8 +260,9 @@ public class OrderController : Controller
             orderItem.Price = finalPrice;
             _db.Orderitems.Add(orderItem);
 
-            totalPrice += originalPrice * qty;
-            promoDiscount += (originalPrice - finalPrice) * qty;
+            subTotal += originalPrice * qty;
+            totalProductPromoDiscount += (originalPrice - priceAfterProductPromo) * qty;
+            totalGlobalPromoDiscount += (priceAfterProductPromo - priceAfterGlobalPromo) * qty;
 
             // ลด Stock
             if (ci.Product.Stock != null)
@@ -163,19 +272,19 @@ public class OrderController : Controller
             }
         }
 
-        // คำนวณส่วนลดลูกค้าใหม่ 5%
-        decimal afterPromo = totalPrice - promoDiscount;
+        // ขั้นตอน 4: ลูกค้าใหม่ ลดเพิ่ม 5%
+        decimal afterAllPromo = subTotal - totalProductPromoDiscount - totalGlobalPromoDiscount;
         decimal newCustDiscount = 0;
         if (isNewCustomer)
         {
-            newCustDiscount = Math.Round(afterPromo * 5m / 100m, 2);
+            newCustDiscount = Math.Round(afterAllPromo * 5m / 100m, 2);
         }
-        decimal totalDiscount = promoDiscount + newCustDiscount;
+        decimal totalDiscount = totalProductPromoDiscount + totalGlobalPromoDiscount + newCustDiscount;
 
         // อัพเดทราคารวม
-        order.TotalPrice = totalPrice;
+        order.TotalPrice = subTotal;
         order.Discount = totalDiscount;
-        order.FinalPrice = totalPrice - totalDiscount;
+        order.FinalPrice = subTotal - totalDiscount;
 
         // ลบสินค้าในตะกร้า
         _db.Cartitems.RemoveRange(cart.Cartitems);
@@ -277,47 +386,6 @@ public class OrderController : Controller
         }
 
         return viewModel;
-    }
-
-    // คำนวณราคาหลังส่วนลด พร้อมส่งชื่อโปรโมชั่นกลับมาด้วย
-    private decimal GetDiscountedPriceWithInfo(int productId, decimal originalPrice, out string promotionName, out decimal discountPct)
-    {
-        promotionName = "";
-        discountPct = 0;
-        var now = DateTime.Now;
-
-        // หา Promotion ที่ใช้งานอยู่
-        var promoProduct = _db.Promotionproducts
-            .Include(pp => pp.Promotion)
-            .FirstOrDefault(pp =>
-                pp.ProductId == productId &&
-                pp.Promotion != null &&
-                pp.Promotion.IsActive == true &&
-                pp.Promotion.StartDate <= now &&
-                pp.Promotion.EndDate >= now);
-
-        if (promoProduct == null || promoProduct.Promotion == null)
-        {
-            return originalPrice;
-        }
-
-        var promo = promoProduct.Promotion;
-
-        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
-        if (promo.DiscountValue != null && promo.DiscountValue > 0)
-        {
-            decimal percent = promo.DiscountValue.Value;
-            if (percent > 100) percent = 100;
-            decimal discountAmount = originalPrice * percent / 100;
-            decimal result = Math.Round(originalPrice - discountAmount, 2);
-            if (result < 0) result = 0;
-
-            promotionName = promo.Name ?? "Promotion";
-            discountPct = percent;
-            return result;
-        }
-
-        return originalPrice;
     }
 
     // ดึง UserId จาก Cookie

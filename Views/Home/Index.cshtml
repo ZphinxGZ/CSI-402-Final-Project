@@ -20,9 +20,9 @@
     <div class="row g-3 mb-4">
         @foreach (var promo in activePromotions)
         {
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0" style="background: linear-gradient(135deg, var(--accent), #9333ea); color: white;">
-                    <div class="card-body">
+            <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card border-0 w-100 d-flex flex-column" style="background: linear-gradient(135deg, var(--accent), #9333ea); color: white;">
+                    <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h5 class="fw-bold mb-1">@promo.Name</h5>
@@ -35,29 +35,35 @@
                                     @promo.StartDate?.ToString("dd MMM") - @promo.EndDate?.ToString("dd MMM yyyy")
                                 </small>
                             </div>
-                            <span class="badge bg-light text-dark fs-6">@promo.DiscountValue% OFF</span>
+                            <span class="badge bg-light text-dark fs-6 flex-shrink-0">@promo.DiscountValue% OFF</span>
                         </div>
-                        @if (promo.Promotionproducts != null && promo.Promotionproducts.Any())
-                        {
-                            <div class="mt-2 d-flex gap-2 flex-wrap">
-                                @foreach (var pp in promo.Promotionproducts.Take(4))
-                                {
-                                    @if (pp.Product != null)
+                        <div class="mt-auto pt-2">
+                            @if (promo.DiscountType == "global")
+                            {
+                                <span class="badge bg-light text-dark"><i class="bi bi-globe me-1"></i>All Products</span>
+                            }
+                            else if (promo.Promotionproducts != null && promo.Promotionproducts.Any())
+                            {
+                                <div class="d-flex gap-2 flex-wrap">
+                                    @foreach (var pp in promo.Promotionproducts.Take(4))
                                     {
-                                        <a asp-controller="Products" asp-action="Details" asp-route-id="@pp.Product.Id" class="text-decoration-none">
-                                            @if (!string.IsNullOrWhiteSpace(pp.Product.ImageUrl))
-                                            {
-                                                <img src="@pp.Product.ImageUrl" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid white;" class="rounded" alt="@pp.Product.Name" />
-                                            }
-                                        </a>
+                                        @if (pp.Product != null)
+                                        {
+                                            <a asp-controller="Products" asp-action="Details" asp-route-id="@pp.Product.Id" class="text-decoration-none">
+                                                @if (!string.IsNullOrWhiteSpace(pp.Product.ImageUrl))
+                                                {
+                                                    <img src="@pp.Product.ImageUrl" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid white;" class="rounded" alt="@pp.Product.Name" />
+                                                }
+                                            </a>
+                                        }
                                     }
-                                }
-                                @if (promo.Promotionproducts.Count > 4)
-                                {
-                                    <span class="d-flex align-items-center small opacity-75">+@(promo.Promotionproducts.Count - 4) more</span>
-                                }
-                            </div>
-                        }
+                                    @if (promo.Promotionproducts.Count > 4)
+                                    {
+                                        <span class="d-flex align-items-center small opacity-75">+@(promo.Promotionproducts.Count - 4) more</span>
+                                    }
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>

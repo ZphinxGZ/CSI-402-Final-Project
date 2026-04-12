@@ -189,41 +189,51 @@ public class CartController : Controller
         return Json(new { success = true, message = "Item removed from cart." });
     }
 
-    // คำนวณราคาหลังส่วนลด
+    // คำนวณราคาหลังส่วนลด (ลดซ้อน: โปรสินค้า → โปรเทศกาล)
     private decimal GetDiscountedPrice(int productId, decimal originalPrice)
     {
         var now = DateTime.Now;
+        decimal price = originalPrice;
 
-        // หา Promotion ที่ใช้งานอยู่สำหรับสินค้านี้
+        // ขั้นตอน 2: ลดจากโปรเฉพาะสินค้า (ถ้ามี)
         var promoProduct = _db.Promotionproducts
             .Include(pp => pp.Promotion)
             .FirstOrDefault(pp =>
                 pp.ProductId == productId &&
                 pp.Promotion != null &&
                 pp.Promotion.IsActive == true &&
+                pp.Promotion.DiscountType == "percentage" &&
                 pp.Promotion.StartDate <= now &&
                 pp.Promotion.EndDate >= now);
 
-        // ถ้าไม่มีโปรโมชั่น ใช้ราคาเดิม
-        if (promoProduct == null || promoProduct.Promotion == null)
+        if (promoProduct != null && promoProduct.Promotion != null)
         {
-            return originalPrice;
+            decimal pct = promoProduct.Promotion.DiscountValue ?? 0;
+            if (pct > 100) pct = 100;
+            if (pct > 0)
+            {
+                price = Math.Round(price - (price * pct / 100), 2);
+                if (price < 0) price = 0;
+            }
         }
 
-        var promo = promoProduct.Promotion;
+        // ขั้นตอน 3: ลดจากโปรเทศกาล Global (ถ้ามี)
+        var globalPromo = _db.Promotions
+            .FirstOrDefault(p =>
+                p.IsActive == true &&
+                p.DiscountType == "global" &&
+                p.StartDate <= now &&
+                p.EndDate >= now);
 
-        // คำนวณส่วนลดเป็น % (จำกัด 0-100)
-        if (promo.DiscountValue != null && promo.DiscountValue > 0)
+        if (globalPromo != null && globalPromo.DiscountValue != null && globalPromo.DiscountValue > 0)
         {
-            decimal discountPercent = promo.DiscountValue.Value;
-            if (discountPercent > 100) discountPercent = 100;
-            decimal discountAmount = originalPrice * discountPercent / 100;
-            decimal result = Math.Round(originalPrice - discountAmount, 2);
-            if (result < 0) result = 0;
-            return result;
+            decimal gPct = globalPromo.DiscountValue.Value;
+            if (gPct > 100) gPct = 100;
+            price = Math.Round(price - (price * gPct / 100), 2);
+            if (price < 0) price = 0;
         }
 
-        return originalPrice;
+        return price;
     }
 
     // ดึง UserId จาก Cookie
